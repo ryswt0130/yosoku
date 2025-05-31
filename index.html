@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Media Browser</title>
+    <!--
+        Adjust Content-Security-Policy.
+        'self' for scripts and styles.
+        'unsafe-inline' for inline scripts (like document.write, though we'll move away from this).
+        img-src 'self' file: to allow loading images from local file system (thumbnails).
+        Note: file: protocol is powerful; in a production app, be more restrictive if possible.
+    -->
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' file:;">
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div id="controls">
+        <button id="select-dir-btn">Select Media Directory</button>
+    </div>
+
+    <div id="status-message">
+        <p>Select a directory to view media.</p>
+    </div>
+
+    <div id="media-grid">
+        <!-- Thumbnails will be loaded here -->
+    </div>
+
+    <script src="renderer.js"></script>
+</body>
+</html>

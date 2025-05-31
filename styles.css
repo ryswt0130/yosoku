@@ -1,0 +1,173 @@
+body {
+    font-family: sans-serif;
+    margin: 0;
+    background-color: #f0f0f0;
+}
+
+#controls {
+    padding: 10px;
+    background-color: #333;
+    color: white;
+    text-align: center;
+}
+
+#select-dir-btn {
+    padding: 10px 20px;
+    font-size: 16px;
+    background-color: #5cb85c;
+    color: white;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+}
+
+#select-dir-btn:hover {
+    background-color: #4cae4c;
+}
+
+#media-grid {
+    display: flex;
+    flex-wrap: wrap;
+    padding: 10px;
+    gap: 15px; /* Spacing between items */
+    justify-content: center; /* Center items if they don't fill the row */
+}
+
+.media-item {
+    width: 200px; /* Same as thumbnail width */
+    border: 1px solid #ccc;
+    border-radius: 5px;
+    background-color: #fff;
+    box-shadow: 2px 2px 5px rgba(0,0,0,0.1);
+    overflow: hidden; /* Ensure content fits */
+    cursor: pointer;
+    transition: transform 0.2s ease-in-out;
+}
+
+.media-item:hover {
+    transform: scale(1.05);
+}
+
+.media-item img {
+    width: 100%; /* Make image take full width of container */
+    height: 150px; /* Same as thumbnail height */
+    object-fit: cover; /* Cover the area, cropping if necessary */
+    display: block; /* Remove extra space below image */
+}
+
+.media-item p {
+    margin: 5px;
+    font-size: 12px;
+    text-align: center;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis; /* Show ellipsis for long filenames */
+}
+
+#status-message {
+    text-align: center;
+    padding: 20px;
+    font-size: 18px;
+    color: #555;
+}
+
+/* Styles for media.html */
+#media-controls {
+    padding: 10px;
+    background-color: #333;
+    text-align: left;
+}
+
+#back-to-grid-btn {
+    padding: 8px 15px;
+    font-size: 14px;
+    background-color: #f0ad4e;
+    color: white;
+    border: none;
+    border-radius: 3px;
+    cursor: pointer;
+}
+
+#back-to-grid-btn:hover {
+    background-color: #ec971f;
+}
+
+#media-viewer-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    width: 100%;
+    height: calc(100vh - 60px); /* Adjust based on #media-controls height */
+    padding: 10px;
+    box-sizing: border-box;
+    background-color: #222; /* Dark background for media viewing */
+}
+
+#media-viewer-container video,
+#media-viewer-container img,
+#media-viewer-container iframe {
+    max-width: 100%;
+    max-height: 100%;
+    border: none; /* For iframe */
+    box-shadow: 0 0 20px rgba(0,0,0,0.5);
+}
+
+#media-viewer-container p { /* For error or loading messages */
+    color: white;
+    font-size: 18px;
+}
+
+/* Styles for Recommendations Section in media.html */
+#recommendations-section {
+    padding: 15px;
+    background-color: #444; /* Slightly lighter than media viewer bg */
+    color: #f0f0f0;
+}
+
+#recommendations-section h2 {
+    margin-top: 0;
+    font-size: 1.2em;
+    border-bottom: 1px solid #555;
+    padding-bottom: 5px;
+}
+
+#recommendations-grid {
+    display: flex;
+    flex-wrap: wrap; /* Allow wrapping if many recommendations */
+    gap: 10px;
+    justify-content: flex-start; /* Align items to the start */
+}
+
+/* Using .media-item style for recommended items for consistency, but smaller */
+.recommended-item {
+    width: 150px; /* Smaller than main grid items */
+    border: 1px solid #555;
+    border-radius: 4px;
+    background-color: #333;
+    box-shadow: 1px 1px 3px rgba(0,0,0,0.2);
+    overflow: hidden;
+    cursor: pointer;
+    transition: transform 0.15s ease-in-out;
+}
+
+.recommended-item:hover {
+    transform: scale(1.03);
+    border-color: #777;
+}
+
+.recommended-item img {
+    width: 100%;
+    height: 100px; /* Adjusted height for smaller items */
+    object-fit: cover;
+    display: block;
+}
+
+.recommended-item p {
+    margin: 4px;
+    font-size: 11px;
+    text-align: center;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    color: #ddd;
+}

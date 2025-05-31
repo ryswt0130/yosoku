@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>View Media</title>
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' file:; media-src 'self' file:; frame-src 'self' file:;">
+    <!-- file: allows loading local files for img, video, iframe -->
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div id="media-controls">
+        <button id="back-to-grid-btn">Back to Grid</button>
+    </div>
+    <div id="media-viewer-container">
+        <!-- Media will be loaded here by mediaRenderer.js -->
+        <p id="media-loading-message">Loading media...</p>
+    </div>
+
+    <div id="recommendations-section">
+        <h2>Recommended</h2>
+        <div id="recommendations-grid">
+            <!-- Recommended items will be loaded here -->
+        </div>
+    </div>
+
+    <script src="mediaRenderer.js"></script>
+</body>
+</html>
