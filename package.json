@@ -5,7 +5,7 @@
   "main": "main.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "start": "./node_modules/.bin/electron .",
+    "start": "electron .",
     "package": "./node_modules/.bin/electron-packager . MyApp --platform=linux --arch=x64 --out=dist/"
   },
   "repository": {
