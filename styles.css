@@ -53,6 +53,14 @@ body {
     opacity: 0.9;
 }
 
+#manage-folders-btn {
+    background-color: #f0ad4e; /* Orange for manage folders */
+}
+#manage-folders-btn:hover {
+    opacity: 0.9;
+}
+
+
 #media-grid {
     display: flex;
     flex-wrap: wrap;
@@ -70,6 +78,8 @@ body {
     overflow: hidden; /* Ensure content fits */
     cursor: pointer;
     transition: transform 0.2s ease-in-out;
+    display: flex; /* Added for better control over image and text */
+    flex-direction: column; /* Stack image and text vertically */
 }
 
 .media-item:hover {
@@ -77,19 +87,48 @@ body {
 }
 
 .media-item img {
-    width: 100%; /* Make image take full width of container */
-    height: 150px; /* Same as thumbnail height */
-    object-fit: cover; /* Cover the area, cropping if necessary */
-    display: block; /* Remove extra space below image */
+    width: 100%;
+    /* height: 150px; REMOVED fixed height */
+    aspect-ratio: 16 / 9; /* Apply 16:9 aspect ratio */
+    object-fit: cover; /* Cover the 16:9 area, cropping if necessary */
+    background-color: #000; /* Background for letter/pillarboxing or loading */
+    display: block;
+    /* border-radius: 3px 3px 0 0; Optional: if text is directly below and want rounded top corners */
+}
+
+.media-item img.thumbnail-loading {
+    background-color: #2c2c2c; /* Dark placeholder background */
+    /* A simple SVG spinner as a data URI could also be used as background-image */
+    /* For now, just a color to indicate loading and maintain space */
+}
+
+.media-item img.thumbnail-error {
+    background-color: #1e1e1e; /* Even darker for error */
+    /* A simple SVG error icon as a data URI could be used here */
+    /* For now, color indicates error, alt text should provide more info */
 }
 
 .media-item p {
-    margin: 5px;
-    font-size: 12px;
-    text-align: center;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis; /* Show ellipsis for long filenames */
+    margin: 5px; /* Keep existing margin or adjust */
+    font-size: 12px; /* Keep existing font-size or adjust */
+    text-align: center; /* Keep existing text-align or adjust */
+
+    /* Remove single-line specific styles */
+    /* white-space: nowrap; */ /* REMOVED */
+    /* text-overflow: ellipsis; */ /* text-overflow alone is for single line */
+
+    /* Multi-line ellipsis for 2 lines */
+    overflow: hidden; /* Required for ellipsis */
+    text-overflow: ellipsis; /* Fallback for browsers that don't support -webkit-line-clamp or for the last line */
+    display: -webkit-box;
+    -webkit-line-clamp: 2; /* Number of lines to show */
+    -webkit-box-orient: vertical;
+
+    line-height: 1.3em; /* Adjust based on font-size for appropriate spacing. (12px * 1.3 = 15.6px) */
+    max-height: 2.6em;  /* line-height * 2 lines (15.6px * 2 = 31.2px). This acts as a fallback. */
+
+    word-break: break-word; /* Allow long words to break and wrap to prevent overflow */
+    height: auto; /* Ensure no fixed height is set that would conflict */
 }
 
 #status-message {
@@ -296,6 +335,87 @@ body {
         -webkit-line-clamp: 2; /* Fewer lines for smaller items */
         text-align: center;
     }
+}
+
+/* Modal Styles */
+.modal {
+    display: none; /* Hidden by default */
+    position: fixed;
+    z-index: 1000; /* Sit on top */
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    overflow: auto; /* Enable scroll if needed */
+    background-color: rgba(0,0,0,0.6); /* Black w/ opacity */
+}
+
+.modal-content {
+    background-color: #282c34; /* Darker background for modal */
+    color: #abb2bf; /* Lighter text for contrast */
+    margin: 10% auto;
+    padding: 25px;
+    border: 1px solid #444851;
+    width: 60%;
+    max-width: 600px; /* Max width */
+    border-radius: 8px;
+    box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+    position: relative;
+}
+
+.modal-close-btn {
+    color: #abb2bf;
+    position: absolute;
+    top: 10px;
+    right: 20px;
+    font-size: 30px;
+    font-weight: bold;
+}
+
+.modal-close-btn:hover,
+.modal-close-btn:focus {
+    color: #ffffff;
+    text-decoration: none;
+    cursor: pointer;
+}
+
+#registered-folders-list {
+    list-style: none;
+    padding: 0;
+    margin-top: 15px;
+}
+
+#registered-folders-list li {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px 5px;
+    border-bottom: 1px solid #3e444f; /* Slightly lighter border */
+    word-break: break-all; /* Break long paths */
+}
+
+#registered-folders-list li:last-child {
+    border-bottom: none;
+}
+
+#registered-folders-list button.remove-folder-btn {
+    padding: 6px 12px;
+    background-color: #e06c75; /* Softer red */
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    margin-left: 10px; /* Space between path and button */
+    flex-shrink: 0; /* Prevent button from shrinking */
+}
+
+#registered-folders-list button.remove-folder-btn:hover {
+    background-color: #be5046; /* Darker red on hover */
+}
+
+#modal-status-message {
+    margin-top: 15px;
+    font-size: 0.9em;
 }
 
 /* Favorite button styles */

@@ -4,6 +4,12 @@ const statusMessage = document.getElementById('status-message');
 const masterVolumeSlider = document.getElementById('master-volume');
 const toggleFavoritesViewBtn = document.getElementById('toggle-favorites-view');
 const toggleHistoryViewBtn = document.getElementById('toggle-history-view');
+const manageFoldersBtn = document.getElementById('manage-folders-btn');
+const manageFoldersModal = document.getElementById('manage-folders-modal');
+const modalCloseBtn = manageFoldersModal.querySelector('.modal-close-btn');
+const registeredFoldersList = document.getElementById('registered-folders-list');
+const modalStatusMessage = document.getElementById('modal-status-message');
+
 
 let currentAllMediaItems = []; // Store the full list of media items
 let showingOnlyFavorites = false;
@@ -97,20 +103,67 @@ function populateMediaGrid(filesToDisplay, messagePrefix = "Found") {
         item.appendChild(favButton);
 
         const img = document.createElement('img');
+        // Use index from forEach for a unique ID. filesToDisplay is the array being iterated.
+        const uniqueImgId = `thumb-img-${filesToDisplay.indexOf(file)}-${Date.now()}`; // Add timestamp for more uniqueness if list re-renders fast
+        img.id = uniqueImgId;
+
         if (file.thumbnailPath) {
-            let thumbnailUrl = file.thumbnailPath.startsWith('file://') ? file.thumbnailPath : `file://${file.thumbnailPath}`;
-            try {
-                img.src = thumbnailUrl;
-            } catch (e) {
-                console.error("Error setting img.src", e, "for path", thumbnailUrl);
-                img.alt = 'Error loading thumbnail';
-            }
+            img.src = `file://${file.thumbnailPath}`; // Assuming thumbnailPath is already a full, valid path
+            img.alt = file.filePath.split(/\/|\\/).pop();
         } else {
-            img.alt = `${file.fileType} (no thumbnail)`;
+            img.classList.add('thumbnail-loading');
+            img.alt = "Loading thumbnail...";
+            // console.log(`No thumbnail for ${file.filePath}, requesting on-demand. ID: ${uniqueImgId}`);
+
+            (async () => {
+                try {
+                    if (!window.electronAPI) {
+                        console.error("electronAPI not found for on-demand thumbnail.");
+                        throw new Error("electronAPI not available");
+                    }
+                    // Request thumbnail generation
+                    const response = await window.electronAPI.invoke('get-thumbnail-for-file', {
+                        filePath: file.filePath,
+                        fileType: file.fileType,
+                        imgIdForRenderer: uniqueImgId // Send the ID to main process
+                    });
+
+                    // The element might have been removed if grid re-rendered quickly
+                    const imgToUpdate = document.getElementById(response.originalImgId);
+
+                    if (imgToUpdate) {
+                        imgToUpdate.classList.remove('thumbnail-loading');
+                        if (response.generatedThumbnailPath) {
+                            imgToUpdate.src = `file://${response.generatedThumbnailPath}`;
+                            imgToUpdate.alt = file.filePath.split(/\/|\\/).pop();
+                        } else {
+                            imgToUpdate.classList.add('thumbnail-error');
+                            imgToUpdate.alt = `Thumbnail error: ${response.error || 'Generation failed'}`;
+                            console.error(`Thumbnail generation failed for ${file.filePath}:`, response.error);
+                        }
+                    } else {
+                        // console.log(`Image element ${response.originalImgId} not found for update, likely re-rendered.`);
+                    }
+                } catch (error) {
+                    console.error('Error requesting/processing on-demand thumbnail for', file.filePath, error);
+                    const imgToUpdateStill = document.getElementById(uniqueImgId); // Try to find it by originally assigned ID
+                    if (imgToUpdateStill) {
+                        imgToUpdateStill.classList.remove('thumbnail-loading');
+                        imgToUpdateStill.classList.add('thumbnail-error');
+                        imgToUpdateStill.alt = "Error loading thumbnail";
+                    }
+                }
+            })();
         }
+
+        // Common onerror for successfully loaded src or if it fails after setting
         img.onerror = () => {
-            console.error(`Error loading image: ${img.src}`);
-            img.alt = 'Failed to load thumbnail';
+            if (!img.classList.contains('thumbnail-error') && !img.classList.contains('thumbnail-loading')) {
+                 // Only log if it's not an error/loading state already handled
+                console.error(`Error loading image src: ${img.src}`);
+                img.classList.add('thumbnail-error'); // Add error class if src fails to load
+                img.alt = 'Failed to load image';
+            }
         };
 
         const filename = document.createElement('p');
@@ -225,14 +278,106 @@ document.addEventListener('DOMContentLoaded', () => {
     if (appTitleHeader) {
         appTitleHeader.textContent = appName;
         appTitleHeader.addEventListener('click', () => {
-            // Navigate home - for index.html, this might mean resetting filters or just a simple reload
-            // For simplicity, just navigate to index.html (will effectively reload with default state if no query params are preserved by this simple navigation)
             window.location.href = 'index.html';
         });
     }
+
+    // Modal event listeners
+    if (manageFoldersBtn) { // Ensure button exists
+        manageFoldersBtn.addEventListener('click', async () => {
+            if (window.electronAPI) {
+                try {
+                    modalStatusMessage.textContent = ''; // Clear previous messages
+                    const folders = await window.electronAPI.invoke('get-scanned-folders');
+                    displayRegisteredFolders(folders);
+                    manageFoldersModal.style.display = 'block';
+                } catch (error) {
+                    console.error('Error fetching scanned folders:', error);
+                    modalStatusMessage.textContent = 'Error loading folder list.';
+                    displayRegisteredFolders([]); // Display empty list on error
+                    manageFoldersModal.style.display = 'block';
+                }
+            }
+        });
+    }
+
+    if (modalCloseBtn) { // Ensure button exists
+        modalCloseBtn.addEventListener('click', () => {
+            manageFoldersModal.style.display = 'none';
+        });
+    }
+
+    window.addEventListener('click', (event) => { // Click outside modal to close
+        if (event.target == manageFoldersModal) {
+            manageFoldersModal.style.display = 'none';
+        }
+    });
 
     if (window.electronAPI) {
         console.log('Requesting current media list from main process...');
         window.electronAPI.send('get-current-media-list');
     }
 });
+
+// Helper function to display registered folders in the modal
+function displayRegisteredFolders(foldersArray) {
+    registeredFoldersList.innerHTML = ''; // Clear existing list
+
+    if (!foldersArray || foldersArray.length === 0) {
+        const li = document.createElement('li');
+        li.textContent = 'No folders have been added yet. Add one using the "Select Media Directory" button.';
+        registeredFoldersList.appendChild(li);
+        return;
+    }
+
+    foldersArray.forEach(folderPath => {
+        const li = document.createElement('li');
+
+        const pathSpan = document.createElement('span');
+        pathSpan.textContent = folderPath;
+        li.appendChild(pathSpan);
+
+        const removeBtn = document.createElement('button');
+        removeBtn.classList.add('remove-folder-btn');
+        removeBtn.textContent = 'Remove';
+        removeBtn.setAttribute('data-folderpath', folderPath);
+
+        removeBtn.addEventListener('click', async (e) => {
+            const pathToRemove = e.target.getAttribute('data-folderpath');
+            if (!pathToRemove) return;
+
+            removeBtn.disabled = true;
+            removeBtn.textContent = 'Removing...';
+            modalStatusMessage.textContent = `Attempting to remove folder: ${pathToRemove}...`;
+
+            try {
+                const response = await window.electronAPI.invoke('remove-scanned-folder', pathToRemove);
+                if (response.success) {
+                    modalStatusMessage.textContent = `Folder "${pathToRemove}" removed. Library updating...`;
+                    displayRegisteredFolders(response.updatedFolders); // Update the modal list
+
+                    currentAllMediaItems = response.updatedMedia; // Update the master list
+                    await renderMediaGrid(); // Refresh the main grid view, applying current filters
+
+                    // Clear message after a delay
+                    setTimeout(() => {
+                        if (modalStatusMessage.textContent === `Folder "${pathToRemove}" removed. Library updating...`) {
+                            modalStatusMessage.textContent = '';
+                        }
+                    }, 3000);
+                } else {
+                    modalStatusMessage.textContent = `Error removing folder: ${response.message || 'Unknown error'}`;
+                    removeBtn.disabled = false;
+                    removeBtn.textContent = 'Remove';
+                }
+            } catch (error) {
+                console.error('Error invoking remove-scanned-folder:', error);
+                modalStatusMessage.textContent = `Error: ${error.message || 'Failed to communicate with main process.'}`;
+                removeBtn.disabled = false;
+                removeBtn.textContent = 'Remove';
+            }
+        });
+
+        li.appendChild(removeBtn);
+        registeredFoldersList.appendChild(li);
+    });

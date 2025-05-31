@@ -102,4 +102,10 @@ async function generateThumbnail(filePath, fileType) {
     }
 }
 
-module.exports = { generateThumbnail, THUMBNAILS_DIR };
+function generateExpectedThumbnailFilename(originalFilePath) {
+    // Generates the base filename for the thumbnail, e.g., "myvideo.png"
+    // Consistent with how generateThumbnail names files.
+    return `${path.parse(path.basename(originalFilePath)).name}.png`;
+}
+
+module.exports = { generateThumbnail, THUMBNAILS_DIR, generateExpectedThumbnailFilename };
