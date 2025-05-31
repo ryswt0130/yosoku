@@ -1,30 +1,64 @@
 document.addEventListener('DOMContentLoaded', () => {
     const mediaViewerContainer = document.getElementById('media-viewer-container');
     const backToGridBtn = document.getElementById('back-to-grid-btn');
+    const mediaFavoriteBtn = document.getElementById('media-favorite-btn');
     const recommendationsGrid = document.getElementById('recommendations-grid');
 
     let currentFilePath = null;
     let currentFileType = null;
+    let currentIsFavorite = false;
+    let currentVideoElement = null; // Keep a reference to the video element
+
+    function updateFavoriteButtonVisual() {
+        if (mediaFavoriteBtn) {
+            mediaFavoriteBtn.innerHTML = currentIsFavorite ? '★' : '☆';
+            mediaFavoriteBtn.setAttribute('aria-label', currentIsFavorite ? 'Unmark as favorite' : 'Mark as favorite');
+        }
+    }
+
+    if (mediaFavoriteBtn) {
+        mediaFavoriteBtn.addEventListener('click', async () => {
+            if (!currentFilePath) return;
+            try {
+                console.log(`Toggling favorite for media page: ${currentFilePath}`);
+                currentIsFavorite = await window.electronAPI.invoke('toggle-favorite', currentFilePath);
+                updateFavoriteButtonVisual();
+                console.log(`New favorite status for ${currentFilePath}: ${currentIsFavorite}`);
+            } catch (error) {
+                console.error('Error toggling favorite on media page:', error);
+            }
+        });
+    }
 
     function clearMediaViewer() {
         mediaViewerContainer.innerHTML = ''; // Clear previous media
+        currentVideoElement = null; // Clear reference
     }
 
     function clearRecommendations() {
         recommendationsGrid.innerHTML = '';
     }
 
-    function loadMedia(filePath, fileType) {
+    function applyVolumeToVideo(videoElement, volume) {
+        if (videoElement) {
+            videoElement.volume = volume;
+            console.log(`Applied volume ${volume} to video.`);
+        }
+    }
+
+    function loadMedia(filePath, fileType, isFavorite) {
         currentFilePath = filePath;
         currentFileType = fileType;
+        currentIsFavorite = isFavorite === true || isFavorite === 'true'; // Ensure boolean
+        currentVideoElement = null;
 
+        updateFavoriteButtonVisual(); // Update based on initial status
         clearMediaViewer();
-        clearRecommendations(); // Clear old recommendations
+        clearRecommendations();
 
         // Update URL without navigating, for bookmarking or refresh
-        const newUrl = `media.html?filePath=${encodeURIComponent(filePath)}&fileType=${encodeURIComponent(fileType)}`;
+        const newUrl = `media.html?filePath=${encodeURIComponent(filePath)}&fileType=${encodeURIComponent(fileType)}&isFavorite=${currentIsFavorite}`;
         history.pushState({ path: newUrl }, '', newUrl);
-
 
         if (!filePath || !fileType) {
             const errorMessage = document.createElement('p');
@@ -43,6 +77,16 @@ document.addEventListener('DOMContentLoaded', () => {
             video.controls = true;
             video.autoplay = true;
             mediaViewerContainer.appendChild(video);
+            currentVideoElement = video; // Store reference
+
+            // Apply stored/default master volume
+            const savedVolume = localStorage.getItem('masterVolume');
+            let initialVolume = 0.5;
+            if (savedVolume !== null) {
+                initialVolume = parseFloat(savedVolume);
+            }
+            applyVolumeToVideo(currentVideoElement, initialVolume);
+
         } else if (fileType === 'image') {
             const img = document.createElement('img');
             img.src = safeFilePath;
@@ -58,10 +102,13 @@ document.addEventListener('DOMContentLoaded', () => {
             mediaViewerContainer.appendChild(errorMessage);
         }
 
-        // After loading media, get recommendations
+        // After loading media, get recommendations and add to history
         if (window.electronAPI) {
             console.log(`Requesting recommendations for: ${filePath}`);
             window.electronAPI.send('get-recommendations', { filePath, fileType });
+
+            console.log(`Adding to history: ${filePath} (${fileType})`);
+            window.electronAPI.send('add-to-history', { filePath, fileType });
         }
     }
 
@@ -105,14 +152,16 @@ document.addEventListener('DOMContentLoaded', () => {
     const params = new URLSearchParams(window.location.search);
     const initialFilePath = params.get('filePath');
     const initialFileType = params.get('fileType');
+    const initialIsFavorite = params.get('isFavorite') === 'true'; // Convert string to boolean
 
     const loadingMessage = document.getElementById('media-loading-message');
     if (loadingMessage) loadingMessage.remove();
 
     if (initialFilePath && initialFileType) {
-        loadMedia(initialFilePath, initialFileType);
+        loadMedia(initialFilePath, initialFileType, initialIsFavorite);
     } else {
         clearMediaViewer();
+        if (mediaFavoriteBtn) mediaFavoriteBtn.style.display = 'none'; // Hide fav button if no media
         const errorMessage = document.createElement('p');
         errorMessage.textContent = 'Media file path or type not provided in URL.';
         mediaViewerContainer.appendChild(errorMessage);
@@ -124,6 +173,14 @@ document.addEventListener('DOMContentLoaded', () => {
         window.electronAPI.on('recommendations-loaded', (recommendedFiles) => {
             console.log('Received recommendations:', recommendedFiles);
             displayRecommendations(recommendedFiles);
+        });
+
+        // IPC listener for real-time master volume changes
+        window.electronAPI.on('apply-master-volume', (newVolume) => {
+            console.log(`Received apply-master-volume event with volume: ${newVolume}`);
+            if (currentVideoElement && currentFileType === 'video') {
+                applyVolumeToVideo(currentVideoElement, newVolume);
+            }
         });
     }
 

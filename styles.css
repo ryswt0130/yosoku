@@ -8,21 +8,41 @@ body {
     padding: 10px;
     background-color: #333;
     color: white;
-    text-align: center;
+    display: flex; /* Use flexbox for alignment */
+    justify-content: center; /* Center items horizontally */
+    align-items: center; /* Align items vertically */
+    gap: 20px; /* Space between button and volume control */
 }
 
-#select-dir-btn {
-    padding: 10px 20px;
-    font-size: 16px;
-    background-color: #5cb85c;
+#volume-control-container {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+}
+
+#select-dir-btn, #toggle-favorites-view, #toggle-history-view {
+    padding: 10px 15px; /* Adjusted padding for more buttons */
+    font-size: 14px; /* Adjusted font size */
     color: white;
     border: none;
     border-radius: 5px;
     cursor: pointer;
 }
 
-#select-dir-btn:hover {
-    background-color: #4cae4c;
+#select-dir-btn {
+    background-color: #5cb85c; /* Green for select dir */
+}
+
+#toggle-favorites-view {
+    background-color: #007bff; /* Blue for favorites toggle */
+}
+
+#toggle-history-view {
+    background-color: #6c757d; /* Gray for history toggle */
+}
+
+#select-dir-btn:hover, #toggle-favorites-view:hover, #toggle-history-view:hover {
+    opacity: 0.9;
 }
 
 #media-grid {
@@ -117,14 +137,49 @@ body {
     font-size: 18px;
 }
 
-/* Styles for Recommendations Section in media.html */
-#recommendations-section {
-    padding: 15px;
-    background-color: #444; /* Slightly lighter than media viewer bg */
+/* Media Page Container Layout */
+.media-page-container {
+    display: flex;
+    height: 100vh; /* Full viewport height */
+    width: 100vw; /* Full viewport width */
+    overflow: hidden; /* Prevent body scrollbars if content overflows */
+}
+
+#media-viewer-main-content {
+    flex: 3; /* Takes up 3 parts of the space, e.g., 75% */
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    background-color: #222; /* Dark background for media viewing */
+}
+
+#media-controls { /* Existing styles will apply, ensure it's part of main content flow */
+    flex-shrink: 0; /* Prevent controls from shrinking */
+}
+
+#media-viewer-container { /* Existing styles will apply, make it take remaining space */
+    flex-grow: 1; /* Takes available vertical space in main content */
+    display: flex; /* Keep its flex properties for centering media */
+    justify-content: center;
+    align-items: center;
+    padding: 10px; /* Keep padding */
+    box-sizing: border-box; /* Keep box-sizing */
+    overflow: hidden; /* Ensure media doesn't overflow its container */
+}
+
+
+#media-recommendations-sidebar {
+    flex: 1; /* Takes up 1 part of the space, e.g., 25% */
+    background-color: #303030; /* Slightly different background for sidebar */
+    padding: 10px;
+    overflow-y: auto; /* Allow vertical scrolling for recommendations */
+    height: 100vh; /* Full height for the sidebar */
+    box-sizing: border-box;
     color: #f0f0f0;
 }
 
-#recommendations-section h2 {
+/* Styles for Recommendations Section in media.html - now inside sidebar */
+#recommendations-section h2 { /* Keep original h2 styling */
     margin-top: 0;
     font-size: 1.2em;
     border-bottom: 1px solid #555;
@@ -133,41 +188,126 @@ body {
 
 #recommendations-grid {
     display: flex;
-    flex-wrap: wrap; /* Allow wrapping if many recommendations */
+    flex-direction: column; /* Stack items vertically in sidebar */
     gap: 10px;
-    justify-content: flex-start; /* Align items to the start */
 }
 
-/* Using .media-item style for recommended items for consistency, but smaller */
 .recommended-item {
-    width: 150px; /* Smaller than main grid items */
-    border: 1px solid #555;
+    width: 98%; /* Take full width of sidebar minus some padding */
+    /* height: auto; */ /* Let height be determined by content or a fixed aspect ratio */
+    border: 1px solid #444; /* Slightly adjusted border */
     border-radius: 4px;
-    background-color: #333;
+    background-color: #2a2a2a; /* Slightly adjusted background */
     box-shadow: 1px 1px 3px rgba(0,0,0,0.2);
     overflow: hidden;
     cursor: pointer;
-    transition: transform 0.15s ease-in-out;
+    transition: background-color 0.15s ease-in-out; /* Changed transition */
+    display: flex; /* Make recommended item a flex container for image + text */
+    flex-direction: row; /* Align image and text horizontally */
+    align-items: center; /* Center items vertically */
+    padding: 5px; /* Add some padding */
 }
 
 .recommended-item:hover {
-    transform: scale(1.03);
-    border-color: #777;
+    background-color: #383838; /* Darker hover */
 }
 
 .recommended-item img {
-    width: 100%;
-    height: 100px; /* Adjusted height for smaller items */
+    width: 100px; /* Fixed width for thumbnail in sidebar item */
+    height: 75px;  /* Fixed height for thumbnail */
     object-fit: cover;
     display: block;
+    margin-right: 8px; /* Space between image and text */
+    border-radius: 3px;
 }
 
 .recommended-item p {
-    margin: 4px;
-    font-size: 11px;
-    text-align: center;
-    white-space: nowrap;
-    overflow: hidden;
+    margin: 0; /* Remove default margin */
+    font-size: 12px; /* Slightly larger for readability */
+    color: #ccc;
+    white-space: normal; /* Allow text to wrap */
+    overflow: hidden; /* Still hide overflow */
     text-overflow: ellipsis;
-    color: #ddd;
+    /* For multi-line ellipsis (complex, might need JS or more CSS) */
+    display: -webkit-box;
+    -webkit-line-clamp: 3; /* Limit to 3 lines */
+    -webkit-box-orient: vertical;
+}
+
+/* Basic responsiveness: Stack columns on smaller screens */
+@media (max-width: 768px) {
+    .media-page-container {
+        flex-direction: column;
+        height: auto; /* Allow content to define height */
+        overflow-y: auto; /* Allow scrolling for the whole page */
+    }
+
+    #media-viewer-main-content {
+        flex: none; /* Reset flex property */
+        width: 100%;
+        height: 60vh; /* Give a significant portion to viewer */
+    }
+
+    #media-recommendations-sidebar {
+        flex: none; /* Reset flex property */
+        width: 100%;
+        height: auto; /* Let content define height */
+        max-height: 40vh; /* But limit its viewport share, still scrollable */
+        overflow-y: auto;
+    }
+
+    #recommendations-grid { /* Revert to wrap for smaller items if needed */
+        flex-direction: row;
+        flex-wrap: wrap;
+        justify-content: space-around;
+    }
+    .recommended-item { /* Adjust item size for wrapped layout */
+        width: 150px;
+        flex-direction: column; /* Stack image and text vertically again */
+        align-items: stretch;
+    }
+    .recommended-item img {
+        width: 100%;
+        height: 100px;
+        margin-right: 0;
+        margin-bottom: 5px;
+    }
+     .recommended-item p {
+        -webkit-line-clamp: 2; /* Fewer lines for smaller items */
+        text-align: center;
+    }
+}
+
+/* Favorite button styles */
+.favorite-btn {
+    background: none;
+    border: none;
+    color: #ffd700; /* Gold color for stars */
+    font-size: 1.2em; /* Adjust size as needed */
+    cursor: pointer;
+    padding: 2px 5px; /* Minimal padding */
+    line-height: 1; /* Ensure it doesn't mess with item height too much */
+    vertical-align: middle;
+}
+
+.media-item .favorite-btn {
+    position: absolute;
+    top: 5px;
+    right: 5px;
+    font-size: 1.5em; /* Larger for media items */
+    text-shadow: 0 0 3px black; /* Make it stand out on images */
+}
+
+.media-item:hover .favorite-btn {
+    display: block; /* Show on hover, or always display if preferred */
+}
+
+/* Style for favorite button in media.html, near the back button or title */
+#media-favorite-btn {
+    font-size: 1.5em;
+    margin-left: 15px; /* Space from back button */
+    color: #ffd700;
+    background: none;
+    border: none;
+    cursor: pointer;
 }
