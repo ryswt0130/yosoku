@@ -1,24 +1,74 @@
 const { app, BrowserWindow, ipcMain, dialog } = require('electron');
 const path = require('path');
-const Store = require('electron-store');
+const fs = require('fs');
+// const Store = require('electron-store'); // Was removed
 const { scanDirectory } = require('./fileScanner');
 const { generateThumbnail } = require('./thumbnailGenerator');
 
-const store = new Store();
+// const store = new Store(); // Was removed
 const HISTORY_LIMIT = 100; // Max number of history items to store
 let allScannedMediaFiles = []; // To store all scanned media files with their details
 
-// Favorites helper functions
+let favoritesFilePath;
+let historyFilePath;
+
+function ensureUserDataDirExists() {
+    const userDataPath = app.getPath('userData');
+    if (!fs.existsSync(userDataPath)) {
+        fs.mkdirSync(userDataPath, { recursive: true });
+        console.log(`Created userData directory: ${userDataPath}`);
+    }
+    return userDataPath;
+}
+
+function ensureFavoritesFileInitialized() {
+    if (!favoritesFilePath) {
+        const userDataPath = ensureUserDataDirExists();
+        favoritesFilePath = path.join(userDataPath, 'favorites.json');
+        console.log(`Favorites file path initialized to: ${favoritesFilePath}`);
+    }
+}
+
+function ensureHistoryFileInitialized() {
+    if (!historyFilePath) {
+        const userDataPath = ensureUserDataDirExists();
+        historyFilePath = path.join(userDataPath, 'history.json');
+        console.log(`History file path initialized to: ${historyFilePath}`);
+    }
+}
+
+// Favorites helper functions (using JSON file)
 function getFavorites() {
-    return store.get('favorites', []);
+    ensureFavoritesFileInitialized();
+    try {
+        if (fs.existsSync(favoritesFilePath)) {
+            const fileContent = fs.readFileSync(favoritesFilePath, 'utf8');
+            if (fileContent) {
+                return JSON.parse(fileContent);
+            }
+        }
+    } catch (error) {
+        console.error('Error reading or parsing favorites.json:', error);
+    }
+    return []; // Default to empty array if file doesn't exist, is empty, or parsing fails
+}
+
+function saveFavorites(favoritesArray) {
+    ensureFavoritesFileInitialized();
+    try {
+        const jsonData = JSON.stringify(favoritesArray, null, 2);
+        fs.writeFileSync(favoritesFilePath, jsonData, 'utf8');
+    } catch (error) {
+        console.error('Error writing favorites.json:', error);
+    }
 }
 
 function addFavorite(filePath) {
     const favorites = getFavorites();
     if (!favorites.includes(filePath)) {
         favorites.push(filePath);
-        store.set('favorites', favorites);
-        console.log(`Added to favorites: ${filePath}`);
+        saveFavorites(favorites);
+        console.log(`Added to favorites (JSON): ${filePath}`);
     }
 }
 
@@ -26,18 +76,40 @@ function removeFavorite(filePath) {
     let favorites = getFavorites();
     if (favorites.includes(filePath)) {
         favorites = favorites.filter(fav => fav !== filePath);
-        store.set('favorites', favorites);
-        console.log(`Removed from favorites: ${filePath}`);
+        saveFavorites(favorites);
+        console.log(`Removed from favorites (JSON): ${filePath}`);
     }
 }
 
 function isFavorite(filePath) {
-    return getFavorites().includes(filePath);
+    const favorites = getFavorites();
+    return favorites.includes(filePath);
 }
 
-// History helper functions
+// History helper functions (using JSON file)
 function getHistory() {
-    return store.get('mediaHistory', []);
+    ensureHistoryFileInitialized();
+    try {
+        if (fs.existsSync(historyFilePath)) {
+            const fileContent = fs.readFileSync(historyFilePath, 'utf8');
+            if (fileContent) {
+                return JSON.parse(fileContent);
+            }
+        }
+    } catch (error) {
+        console.error('Error reading or parsing history.json:', error);
+    }
+    return [];
+}
+
+function saveHistory(historyArray) {
+    ensureHistoryFileInitialized();
+    try {
+        const jsonData = JSON.stringify(historyArray, null, 2);
+        fs.writeFileSync(historyFilePath, jsonData, 'utf8');
+    } catch (error) {
+        console.error('Error writing history.json:', error);
+    }
 }
 
 function addHistoryItem(filePath, fileType) {
@@ -52,13 +124,13 @@ function addHistoryItem(filePath, fileType) {
         lastViewed: new Date().toISOString() // Store timestamp in ISO format
     });
 
-    // Enforce history limit
+    // Enforce history limit (ensure HISTORY_LIMIT is defined, it is from previous step)
     if (history.length > HISTORY_LIMIT) {
         history = history.slice(0, HISTORY_LIMIT);
     }
 
-    store.set('mediaHistory', history);
-    console.log(`Added to history: ${filePath}, new history length: ${history.length}`);
+    saveHistory(history);
+    console.log(`Added to history (JSON): ${filePath}, new history length: ${history.length}`);
 }
 
 
