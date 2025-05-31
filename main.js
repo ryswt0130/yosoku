@@ -15,17 +15,19 @@ function createWindow () {
 app.whenReady().then(createWindow)
 
 ipcMain.on('open-file-dialog', (event) => {
+  console.log('Received open-file-dialog message'); // Debug log
   dialog.showOpenDialog({
     properties: ['openFile'],
     filters: [
       { name: 'Media Files', extensions: ['mp4', 'webm', 'ogv', 'jpg', 'jpeg', 'png', 'gif', 'html', 'htm'] }
     ]
   }).then(result => {
+    console.log('Dialog result:', result); // Debug log
     if (!result.canceled && result.filePaths.length > 0) {
       event.sender.send('selected-file', result.filePaths[0]);
     }
   }).catch(err => {
-    console.log(err);
+    console.error('Error opening dialog:', err); // Debug log
   });
 });
 

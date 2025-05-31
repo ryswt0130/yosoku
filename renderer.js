@@ -3,9 +3,14 @@ const { ipcRenderer } = require('electron');
 const selectFileButton = document.getElementById('select-file-button');
 const fileDisplayArea = document.getElementById('file-display-area');
 
-selectFileButton.addEventListener('click', () => {
-  ipcRenderer.send('open-file-dialog');
-});
+if (selectFileButton) {
+  selectFileButton.addEventListener('click', () => {
+    console.log('Select File button clicked'); // Debug log
+    ipcRenderer.send('open-file-dialog');
+  });
+} else {
+  console.error('Select File button not found'); // Debug log
+}
 
 ipcRenderer.on('selected-file', (event, filePath) => {
   fileDisplayArea.innerHTML = ''; // Clear previous content
