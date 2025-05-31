@@ -1,10 +1,13 @@
 const { app, BrowserWindow, ipcMain, dialog } = require('electron');
 const path = require('path');
 const fs = require('fs');
+const url = require('url'); // Needed for formatting URL with query
+const appPackage = require('./package.json');
 // const Store = require('electron-store'); // Was removed
 const { scanDirectory } = require('./fileScanner');
 const { generateThumbnail } = require('./thumbnailGenerator');
 
+const APP_NAME = appPackage.productName || "My Media Browser";
 // const store = new Store(); // Was removed
 const HISTORY_LIMIT = 100; // Max number of history items to store
 let allScannedMediaFiles = []; // To store all scanned media files with their details
@@ -136,21 +139,48 @@ function addHistoryItem(filePath, fileType) {
 
 function createWindow () {
   const win = new BrowserWindow({
-    width: 1200, // Increased width for better display
-    height: 800, // Increased height
+    width: 1200,
+    height: 800,
     webPreferences: {
       preload: path.join(__dirname, 'preload.js'),
       contextIsolation: true,
-      nodeIntegration: false // Recommended for security
+      nodeIntegration: false
     }
   })
 
-  win.loadFile('index.html')
-  // Open DevTools automatically - useful for development
+  // Pass APP_NAME as a query parameter to index.html
+  const indexPath = path.join(__dirname, 'index.html');
+  const indexUrl = url.format({
+      pathname: indexPath,
+      protocol: 'file:',
+      slashes: true,
+      query: { appName: APP_NAME }
+  });
+  win.loadURL(indexUrl);
   // win.webContents.openDevTools();
 }
 
-app.whenReady().then(createWindow);
+app.whenReady().then(() => {
+  createWindow();
+
+  // Handle app-command for mouse back/forward buttons (primarily Windows)
+  app.on('app-command', (e, cmd) => {
+    const focusedWindow = BrowserWindow.getFocusedWindow();
+    if (focusedWindow) {
+      if (cmd === 'browser-backward') {
+        if (focusedWindow.webContents.canGoBack()) {
+          console.log('Navigating back via app-command');
+          focusedWindow.webContents.goBack();
+        }
+      } else if (cmd === 'browser-forward') {
+        if (focusedWindow.webContents.canGoForward()) {
+          console.log('Navigating forward via app-command');
+          focusedWindow.webContents.goForward();
+        }
+      }
+    }
+  });
+});
 
 app.on('window-all-closed', () => {
   if (process.platform !== 'darwin') {
@@ -221,7 +251,8 @@ ipcMain.on('open-media', (event, { filePath, fileType }) => { // isFavorite stat
       query: {
         filePath: filePath,
         fileType: fileType,
-        isFavorite: isFavorite(filePath) // Pass favorite status directly
+        isFavorite: isFavorite(filePath), // Pass favorite status directly
+        appName: APP_NAME // Pass app name
       }
     });
   }

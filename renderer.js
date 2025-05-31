@@ -217,6 +217,20 @@ document.addEventListener('DOMContentLoaded', () => {
     initializeVolume();
     toggleFavoritesViewBtn.textContent = showingOnlyFavorites ? 'Show All Media' : 'Show Favorites';
     toggleHistoryViewBtn.textContent = showingOnlyHistory ? 'Show All Media' : 'Show History';
+
+    // Get App Name from query params and set header
+    const params = new URLSearchParams(window.location.search);
+    const appName = params.get('appName') || "My Media Browser"; // Fallback
+    const appTitleHeader = document.getElementById('app-title-header');
+    if (appTitleHeader) {
+        appTitleHeader.textContent = appName;
+        appTitleHeader.addEventListener('click', () => {
+            // Navigate home - for index.html, this might mean resetting filters or just a simple reload
+            // For simplicity, just navigate to index.html (will effectively reload with default state if no query params are preserved by this simple navigation)
+            window.location.href = 'index.html';
+        });
+    }
+
     if (window.electronAPI) {
         console.log('Requesting current media list from main process...');
         window.electronAPI.send('get-current-media-list');

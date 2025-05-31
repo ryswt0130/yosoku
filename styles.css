@@ -8,10 +8,18 @@ body {
     padding: 10px;
     background-color: #333;
     color: white;
-    display: flex; /* Use flexbox for alignment */
-    justify-content: center; /* Center items horizontally */
-    align-items: center; /* Align items vertically */
-    gap: 20px; /* Space between button and volume control */
+    display: flex;
+    /* justify-content: center; // Remove to allow title to be on left */
+    align-items: center;
+    gap: 15px; /* Adjusted gap */
+}
+
+.app-title {
+    font-size: 1.2em;
+    font-weight: bold;
+    cursor: pointer;
+    margin-right: auto; /* Pushes other control items to the right */
+    /* color: #61dafb; */ /* Optional: Accent color */
 }
 
 #volume-control-container {
@@ -153,11 +161,23 @@ body {
     background-color: #222; /* Dark background for media viewing */
 }
 
-#media-controls { /* Existing styles will apply, ensure it's part of main content flow */
-    flex-shrink: 0; /* Prevent controls from shrinking */
+#media-controls {
+    /* Existing styles: padding, background-color, text-align */
+    /* Ensure it's a flex container for aligning title and buttons */
+    display: flex;
+    align-items: center;
+    padding: 10px; /* Keep or adjust padding */
+    background-color: #333; /* Keep or adjust background */
+    /* gap: 15px; // If needed, but app-title uses margin-right: auto */
+    flex-shrink: 0;
 }
 
-#media-viewer-container { /* Existing styles will apply, make it take remaining space */
+#media-controls .app-title { /* Specific styling if different from main page's title */
+    margin-right: auto; /* Same push behavior */
+}
+
+
+#media-viewer-container {
     flex-grow: 1; /* Takes available vertical space in main content */
     display: flex; /* Keep its flex properties for centering media */
     justify-content: center;

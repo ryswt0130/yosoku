@@ -3,6 +3,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const backToGridBtn = document.getElementById('back-to-grid-btn');
     const mediaFavoriteBtn = document.getElementById('media-favorite-btn');
     const recommendationsGrid = document.getElementById('recommendations-grid');
+    const appTitleHeader = document.getElementById('app-title-header');
 
     let currentFilePath = null;
     let currentFileType = null;
@@ -152,7 +153,15 @@ document.addEventListener('DOMContentLoaded', () => {
     const params = new URLSearchParams(window.location.search);
     const initialFilePath = params.get('filePath');
     const initialFileType = params.get('fileType');
-    const initialIsFavorite = params.get('isFavorite') === 'true'; // Convert string to boolean
+    const initialIsFavorite = params.get('isFavorite') === 'true';
+    const appName = params.get('appName') || "My Media Browser"; // Fallback
+
+    if (appTitleHeader) {
+        appTitleHeader.textContent = appName;
+        appTitleHeader.addEventListener('click', () => {
+            window.location.href = 'index.html'; // Navigate home
+        });
+    }
 
     const loadingMessage = document.getElementById('media-loading-message');
     if (loadingMessage) loadingMessage.remove();
