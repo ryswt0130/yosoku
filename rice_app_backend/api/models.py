@@ -114,3 +114,27 @@ class OrderItem(models.Model):
             # Assuming price_yen_per_kg_snapshot is set at creation time based on product's current price
         self.total_price_yen = self.quantity_kg * self.price_yen_per_kg_snapshot
         super().save(*args, **kwargs)
+
+# Notification Model
+class Notification(models.Model):
+    NOTIFICATION_TYPE_CHOICES = [
+        ('new_order', 'New Order Received'),
+        ('order_update', 'Order Status Updated'),
+        ('general_info', 'General Information'),
+        # Add more types as needed
+    ]
+    recipient = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='notifications')
+    message = models.TextField()
+    is_read = models.BooleanField(default=False)
+    notification_type = models.CharField(max_length=20, choices=NOTIFICATION_TYPE_CHOICES, default='general_info')
+    # Optional: Link to related object using GenericForeignKey or simple URL/ID
+    related_object_url = models.CharField(max_length=255, blank=True, null=True, help_text="A URL to the related object, e.g., order detail page.")
+
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True) # For when it's marked as read
+
+    class Meta:
+        ordering = ['-created_at']
+
+    def __str__(self):
+        return f"Notification for {self.recipient.username}: {self.message[:30]}..."

@@ -45,4 +45,29 @@ const producerService = {
   updateProducerProfile,
 };
 
+
+// Order Management for Producers
+const getProducerOrders = async (): Promise<OrderData[]> => {
+  const response = await apiClient.get<OrderData[]>('/orders/');
+  return response.data;
+};
+
+const getProducerOrderDetail = async (orderId: number): Promise<OrderData> => {
+  const response = await apiClient.get<OrderData>(`/orders/${orderId}/`);
+  return response.data;
+};
+
+const updateOrderStatusAsProducer = async (orderId: number, status: string): Promise<OrderData> => {
+  const response = await apiClient.patch<OrderData>(`/orders/${orderId}/update_status/`, { order_status: status });
+  return response.data;
+};
+
+const producerService = {
+  getMyProducerProfile,
+  updateProducerProfile,
+  getProducerOrders,
+  getProducerOrderDetail,
+  updateOrderStatusAsProducer,
+};
+
 export default producerService;

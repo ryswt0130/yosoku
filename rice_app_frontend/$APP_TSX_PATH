@@ -1,23 +1,28 @@
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Link, Navigate, Outlet } from 'react-router-dom';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
+import { NotificationProvider } from './contexts/NotificationContext'; // Import NotificationProvider
+import NotificationIcon from './components/Notifications/NotificationIcon'; // Import NotificationIcon
 
 // General Pages
 import LoginPage from './pages/LoginPage';
 import RegisterPage from './pages/RegisterPage';
 import ProductBrowsePage from './pages/ProductBrowsePage';
 import ProductDetailPage from './pages/ProductDetailPage';
+import NotificationsPage from './pages/NotificationsPage'; // New Notifications Page
 
 // Producer Pages
 import ProducerDashboardPage from './pages/ProducerDashboardPage';
 import ProductCreatePage from './pages/ProductCreatePage';
 import ProductEditPage from './pages/ProductEditPage';
 import ProducerProfilePage from './pages/ProducerProfilePage';
+import ProducerOrdersPage from './pages/Producer/ProducerOrdersPage';
+import ProducerOrderDetailPage from './pages/Producer/ProducerOrderDetailPage';
 
 // Consumer Pages
 import ManageAddressesPage from './pages/ManageAddressesPage';
 import OrderHistoryPage from './pages/OrderHistoryPage';
-import OrderDetailPage from './pages/OrderDetailPage'; // For viewing a single order's details
+import ConsumerOrderDetailPage from './pages/OrderDetailPage';
 
 
 const HomePage: React.FC = () => {
@@ -31,10 +36,7 @@ const HomePage: React.FC = () => {
     );
 }
 
-interface ProtectedRouteProps {
-  children: JSX.Element;
-  // allowedRoles?: string[]; // Future: for role-specific routes
-}
+interface ProtectedRouteProps { children: JSX.Element; }
 
 const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children }) => {
   const { isAuthenticated, isLoading } = useAuth();
@@ -44,12 +46,10 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children }) => {
 
 const Layout: React.FC = () => {
   const { isAuthenticated, logout } = useAuth();
-  // const { userRole } = useAuth(); // TODO: Get user role from AuthContext
-
   return (
     <div>
-      <nav>
-        <ul>
+      <nav style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px 20px', background: '#f0f0f0' }}>
+        <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'flex', gap: '15px' }}>
           <li><Link to="/">Home</Link></li>
           <li><Link to="/products">Browse Products</Link></li>
           {!isAuthenticated && (
@@ -60,16 +60,21 @@ const Layout: React.FC = () => {
           )}
           {isAuthenticated && (
             <>
-              {/* TODO: Conditional links based on role */}
               <li><Link to="/producer/dashboard">Producer Area</Link></li>
               <li><Link to="/consumer/orders">My Orders</Link></li>
               <li><Link to="/consumer/addresses">My Addresses</Link></li>
-              <li><button onClick={logout}>Logout</button></li>
+              <li><Link to="/notifications">Notifications Page</Link></li>
             </>
           )}
         </ul>
+        {isAuthenticated && (
+          <div style={{display: 'flex', alignItems: 'center'}}>
+            <NotificationIcon /> {/* Notification Icon Here */}
+            <button onClick={logout} style={{marginLeft: '10px'}}>Logout</button>
+          </div>
+        )}
       </nav>
-      <hr />
+      <hr style={{margin: 0}} />
       <div style={{padding: "20px"}}>
         <Outlet />
       </div>
@@ -80,33 +85,34 @@ const Layout: React.FC = () => {
 function App() {
   return (
     <AuthProvider>
-      <Router>
-        <Routes>
-          <Route element={<Layout />}>
-            <Route path="/" element={<HomePage />} />
-            <Route path="/products" element={<ProductBrowsePage />} />
-            <Route path="/products/:productId" element={<ProductDetailPage />} />
+      <NotificationProvider> {/* Wrap with NotificationProvider */}
+        <Router>
+          <Routes>
+            <Route element={<Layout />}>
+              <Route path="/" element={<HomePage />} />
+              <Route path="/products" element={<ProductBrowsePage />} />
+              <Route path="/products/:productId" element={<ProductDetailPage />} />
+              <Route path="/notifications" element={<ProtectedRoute><NotificationsPage /></ProtectedRoute>} /> {/* New Route */}
 
-            <Route path="/register" element={<RegisterPage />} />
-            <Route path="/login" element={<LoginPage />} />
+              <Route path="/register" element={<RegisterPage />} />
+              <Route path="/login" element={<LoginPage />} />
 
-            {/* Producer Routes */}
-            <Route path="/producer/dashboard" element={<ProtectedRoute><ProducerDashboardPage /></ProtectedRoute>} />
-            <Route path="/producer/profile" element={<ProtectedRoute><ProducerProfilePage /></ProtectedRoute>} />
-            <Route path="/producer/products/new" element={<ProtectedRoute><ProductCreatePage /></ProtectedRoute>} />
-            <Route path="/producer/products/edit/:productId" element={<ProtectedRoute><ProductEditPage /></ProtectedRoute>} />
+              <Route path="/producer/dashboard" element={<ProtectedRoute><ProducerDashboardPage /></ProtectedRoute>} />
+              <Route path="/producer/profile" element={<ProtectedRoute><ProducerProfilePage /></ProtectedRoute>} />
+              <Route path="/producer/products/new" element={<ProtectedRoute><ProductCreatePage /></ProtectedRoute>} />
+              <Route path="/producer/products/edit/:productId" element={<ProtectedRoute><ProductEditPage /></ProtectedRoute>} />
+              <Route path="/producer/orders" element={<ProtectedRoute><ProducerOrdersPage /></ProtectedRoute>} />
+              <Route path="/producer/orders/:orderId" element={<ProtectedRoute><ProducerOrderDetailPage /></ProtectedRoute>} />
 
-            {/* Consumer Protected Routes */}
-            <Route path="/consumer/addresses" element={<ProtectedRoute><ManageAddressesPage /></ProtectedRoute>} />
-            <Route path="/consumer/orders" element={<ProtectedRoute><OrderHistoryPage /></ProtectedRoute>} />
-            <Route path="/orders/:orderId" element={<ProtectedRoute><OrderDetailPage /></ProtectedRoute>} /> {/* Detail for specific order */}
+              <Route path="/consumer/addresses" element={<ProtectedRoute><ManageAddressesPage /></ProtectedRoute>} />
+              <Route path="/consumer/orders" element={<ProtectedRoute><OrderHistoryPage /></ProtectedRoute>} />
+              <Route path="/consumer/orders/:orderId" element={<ProtectedRoute><ConsumerOrderDetailPage /></ProtectedRoute>} />
 
-
-            {/* TODO: 404 Page */}
-            <Route path="*" element={<p>Page Not Found</p>} />
-          </Route>
-        </Routes>
-      </Router>
+              <Route path="*" element={<p>Page Not Found (404)</p>} />
+            </Route>
+          </Routes>
+        </Router>
+      </NotificationProvider>
     </AuthProvider>
   );
 }

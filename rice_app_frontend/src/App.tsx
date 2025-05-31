@@ -1,110 +1,120 @@
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Link, Navigate, Outlet } from 'react-router-dom';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
+import { NotificationProvider } from './contexts/NotificationContext';
+import NotificationIcon from './components/Notifications/NotificationIcon';
+
+// General Pages
 import LoginPage from './pages/LoginPage';
 import RegisterPage from './pages/RegisterPage';
+import ProductBrowsePage from './pages/ProductBrowsePage';
+import ProductDetailPage from './pages/ProductDetailPage';
+import NotificationsPage from './pages/NotificationsPage';
 
 // Producer Pages
 import ProducerDashboardPage from './pages/ProducerDashboardPage';
 import ProductCreatePage from './pages/ProductCreatePage';
 import ProductEditPage from './pages/ProductEditPage';
 import ProducerProfilePage from './pages/ProducerProfilePage';
+import ProducerOrdersPage from './pages/Producer/ProducerOrdersPage';
+import ProducerOrderDetailPage from './pages/Producer/ProducerOrderDetailPage';
 
-// Placeholder for Home page
+// Consumer Pages
+import ManageAddressesPage from './pages/ManageAddressesPage';
+import OrderHistoryPage from './pages/OrderHistoryPage';
+import ConsumerOrderDetailPage from './pages/OrderDetailPage';
+
+
 const HomePage: React.FC = () => {
-    const { isAuthenticated, userToken } = useAuth();
-    // TODO: Decode token or fetch user profile to get role
-    // const userRole = getUserRoleFromToken(userToken);
-    // For now, just basic links
+    const { isAuthenticated } = useAuth();
     return (
-        <div>
+        <div className="container"> {/* Added container class */}
             <h1>Welcome to the Rice Direct App!</h1>
+            <p><Link to="/products">Browse All Products</Link></p>
             {isAuthenticated && <p>You are logged in.</p>}
-            {/* {isAuthenticated && userRole === 'producer' && <Link to="/producer/dashboard">Producer Dashboard</Link>}
-            {isAuthenticated && userRole === 'consumer' && <Link to="/consumer/dashboard">Browse Products</Link>} */}
         </div>
     );
 }
 
-interface ProtectedRouteProps {
-  children: JSX.Element;
-  allowedRoles?: string[]; // e.g., ['producer', 'consumer']
-}
+interface ProtectedRouteProps { children: JSX.Element; }
 
-const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children, allowedRoles }) => {
-  const { isAuthenticated, isLoading, userToken } = useAuth();
-  // const userRole = useAuth().userRole; // Assuming userRole is part of AuthContext state
-
+const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children }) => {
+  const { isAuthenticated, isLoading } = useAuth();
   if (isLoading) return <p>Loading authentication status...</p>;
-  if (!isAuthenticated) return <Navigate to="/login" replace />;
-
-  // TODO: Implement role checking if allowedRoles is provided
-  // For now, if authenticated, allow access. Role check should be added to useAuth/AuthContext
-  // For example:
-  // if (allowedRoles && !allowedRoles.includes(userRole)) {
-  //   return <Navigate to="/unauthorized" replace />;
-  // }
-
-  return children;
+  return isAuthenticated ? children : <Navigate to="/login" replace />;
 };
 
-
-// Basic Layout component
 const Layout: React.FC = () => {
   const { isAuthenticated, logout } = useAuth();
-  // const userRole = useAuth().userRole; // Placeholder
-
   return (
     <div>
+      {/* Nav styles will be primarily from index.css now */}
       <nav>
         <ul>
           <li><Link to="/">Home</Link></li>
-          {!isAuthenticated && <li><Link to="/register">Register</Link></li>}
-          {!isAuthenticated && <li><Link to="/login">Login</Link></li>}
+          <li><Link to="/products">Browse Products</Link></li>
+          {!isAuthenticated && (
+            <>
+              <li><Link to="/register">Register</Link></li>
+              <li><Link to="/login">Login</Link></li>
+            </>
+          )}
           {isAuthenticated && (
             <>
-              {/* Example: Conditionally show dashboard links based on role */}
-              {/* {userRole === 'producer' && <li><Link to="/producer/dashboard">Producer Dashboard</Link></li>}
-              {userRole === 'consumer' && <li><Link to="/consumer/dashboard">Browse</Link></li>} */}
-              {/* For now, show generic dashboard link if role check not implemented */}
-              <li><Link to="/producer/dashboard">Producer Dashboard (Temp)</Link></li>
-              <li><button onClick={logout}>Logout</button></li>
+              <li><Link to="/producer/dashboard">Producer Area</Link></li>
+              <li><Link to="/consumer/orders">My Orders</Link></li>
+              <li><Link to="/consumer/addresses">My Addresses</Link></li>
+              <li><Link to="/notifications">Notifications</Link></li> {/* Simpler link text */}
             </>
           )}
         </ul>
+        {isAuthenticated && (
+          <div style={{display: 'flex', alignItems: 'center'}}> {/* Keep this flex for alignment */}
+            <NotificationIcon />
+            <button onClick={logout} className="danger" style={{marginLeft: '10px'}}>Logout</button> {/* Added class */}
+          </div>
+        )}
       </nav>
-      <hr />
-      <Outlet /> {/* Child routes will render here */}
+      {/* Removed hr, index.css will handle separation if needed via nav bottom-border */}
+      <div className="page-content-wrapper"> {/* Use class from index.css */}
+        <Outlet />
+      </div>
     </div>
   );
 };
 
-
 function App() {
   return (
     <AuthProvider>
-      <Router>
-        <Routes>
-          <Route element={<Layout />}> {/* All routes use the Layout */}
-            <Route path="/" element={<HomePage />} />
-            <Route path="/register" element={<RegisterPage />} />
-            <Route path="/login" element={<LoginPage />} />
+      <NotificationProvider>
+        <Router>
+          <Routes>
+            <Route element={<Layout />}>
+              <Route path="/" element={<HomePage />} />
+              <Route path="/products" element={<ProductBrowsePage />} />
+              <Route path="/products/:productId" element={<ProductDetailPage />} />
+              <Route path="/notifications" element={<ProtectedRoute><NotificationsPage /></ProtectedRoute>} />
 
-            {/* Producer Routes - Protected */}
-            <Route path="/producer/dashboard" element={<ProtectedRoute><ProducerDashboardPage /></ProtectedRoute>} />
-            <Route path="/producer/profile" element={<ProtectedRoute><ProducerProfilePage /></ProtectedRoute>} />
-            <Route path="/producer/products/new" element={<ProtectedRoute><ProductCreatePage /></ProtectedRoute>} />
-            <Route path="/producer/products/edit/:productId" element={<ProtectedRoute><ProductEditPage /></ProtectedRoute>} />
-            {/* Add other producer-specific routes here, e.g., for orders */}
+              <Route path="/register" element={<RegisterPage />} />
+              <Route path="/login" element={<LoginPage />} />
 
-            {/* TODO: Add Consumer specific routes */}
-            {/* TODO: Add a 404 Not Found page */}
-            {/* TODO: Add an Unauthorized page */}
-          </Route>
-        </Routes>
-      </Router>
+              <Route path="/producer/dashboard" element={<ProtectedRoute><ProducerDashboardPage /></ProtectedRoute>} />
+              <Route path="/producer/profile" element={<ProtectedRoute><ProducerProfilePage /></ProtectedRoute>} />
+              <Route path="/producer/products/new" element={<ProtectedRoute><ProductCreatePage /></ProtectedRoute>} />
+              <Route path="/producer/products/edit/:productId" element={<ProtectedRoute><ProductEditPage /></ProtectedRoute>} />
+              <Route path="/producer/orders" element={<ProtectedRoute><ProducerOrdersPage /></ProtectedRoute>} />
+              <Route path="/producer/orders/:orderId" element={<ProtectedRoute><ProducerOrderDetailPage /></ProtectedRoute>} />
+
+              <Route path="/consumer/addresses" element={<ProtectedRoute><ManageAddressesPage /></ProtectedRoute>} />
+              <Route path="/consumer/orders" element={<ProtectedRoute><OrderHistoryPage /></ProtectedRoute>} />
+              <Route path="/consumer/orders/:orderId" element={<ProtectedRoute><ConsumerOrderDetailPage /></ProtectedRoute>} />
+
+              <Route path="*" element={<div className="container"><h1>404 - Page Not Found</h1><p>Sorry, the page you are looking for does not exist.</p></div>} />
+            </Route>
+          </Routes>
+        </Router>
+      </NotificationProvider>
     </AuthProvider>
   );
 }
-
 export default App;

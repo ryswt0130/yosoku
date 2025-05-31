@@ -1,5 +1,6 @@
 from django.contrib import admin
-from .models import UserProfile, ProducerProfile, Product, DeliveryAddress, Order, OrderItem
+from django.utils import timezone
+from .models import UserProfile, ProducerProfile, Product, DeliveryAddress, Order, OrderItem, Notification
 
 @admin.register(UserProfile)
 class UserProfileAdmin(admin.ModelAdmin):
@@ -89,3 +90,24 @@ class OrderItemAdmin(admin.ModelAdmin):
         link = reverse("admin:api_order_change", args=[obj.order.id])
         return format_html('<a href="{}">{}</a>', link, obj.order.id)
     order_id_link.short_description = 'Order ID'
+
+
+@admin.register(Notification)
+class NotificationAdmin(admin.ModelAdmin):
+    list_display = ('recipient', 'message_summary', 'notification_type', 'is_read', 'created_at')
+    list_filter = ('is_read', 'notification_type', 'recipient')
+    search_fields = ('recipient__username', 'message')
+    readonly_fields = ('created_at', 'updated_at')
+    actions = ['mark_selected_as_read', 'mark_selected_as_unread']
+
+    def message_summary(self, obj):
+        return obj.message[:50] + '...' if len(obj.message) > 50 else obj.message
+    message_summary.short_description = 'Message'
+
+    def mark_selected_as_read(self, request, queryset):
+        queryset.update(is_read=True, updated_at=timezone.now())
+    mark_selected_as_read.short_description = "Mark selected notifications as read"
+
+    def mark_selected_as_unread(self, request, queryset):
+        queryset.update(is_read=False, updated_at=timezone.now()) # Or keep updated_at as is
+    mark_selected_as_unread.short_description = "Mark selected notifications as unread"

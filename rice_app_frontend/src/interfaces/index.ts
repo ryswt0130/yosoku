@@ -72,3 +72,15 @@ export interface PlaceOrderPayload {
     notes_by_consumer?: string;
     // producer_profile_id will be derived by backend from product_id
 }
+
+
+export interface NotificationData {
+  id: number;
+  recipient_username?: string; // From serializer
+  message: string;
+  is_read: boolean;
+  notification_type: string;
+  related_object_url?: string | null;
+  created_at: string;
+  updated_at?: string;
+}

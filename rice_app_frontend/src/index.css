@@ -1,3 +1,51 @@
+/*! Simple Reset */
+html, body, div, span, applet, object, iframe,
+h1, h2, h3, h4, h5, h6, p, blockquote, pre,
+a, abbr, acronym, address, big, cite, code,
+del, dfn, em, img, ins, kbd, q, s, samp,
+small, strike, strong, sub, sup, tt, var,
+b, u, i, center,
+dl, dt, dd, ol, ul, li,
+fieldset, form, label, legend,
+table, caption, tbody, tfoot, thead, tr, th, td,
+article, aside, canvas, details, embed,
+figure, figcaption, footer, header, hgroup,
+menu, nav, output, ruby, section, summary,
+time, mark, audio, video {
+  margin: 0;
+  padding: 0;
+  border: 0;
+  font-size: 100%;
+  font: inherit;
+  vertical-align: baseline;
+}
+article, aside, details, figcaption, figure,
+footer, header, hgroup, menu, nav, section {
+  display: block;
+}
+body {
+  line-height: 1;
+}
+ol, ul {
+  list-style: none;
+}
+blockquote, q {
+  quotes: none;
+}
+blockquote:before, blockquote:after,
+q:before, q:after {
+  content: '';
+  content: none;
+}
+table {
+  border-collapse: collapse;
+  border-spacing: 0;
+}
+*, *::before, *::after {
+  box-sizing: border-box;
+}
+
+
 body {
   margin: 0;
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
@@ -10,4 +58,254 @@ body {
 code {
   font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New',
     monospace;
+}
+
+/* Global Styles */
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  line-height: 1.6;
+  color: #333;
+  background-color: #f4f7f6;
+  margin: 0;
+  padding: 0;
+}
+
+h1, h2, h3, h4, h5, h6 {
+  margin-bottom: 0.75em;
+  color: #2c3e50;
+  font-weight: 600;
+}
+h1 { font-size: 2.2em; }
+h2 { font-size: 1.8em; }
+h3 { font-size: 1.5em; }
+
+p {
+  margin-bottom: 1em;
+}
+
+a {
+  color: #3498db;
+  text-decoration: none;
+}
+a:hover {
+  text-decoration: underline;
+}
+
+/* Container for page content */
+.container {
+  width: 90%;
+  max-width: 1200px;
+  margin: 20px auto;
+  padding: 20px;
+  background-color: #fff;
+  box-shadow: 0 0 10px rgba(0,0,0,0.05);
+  border-radius: 8px;
+}
+
+/* Basic Form Styling */
+form {
+  display: flex;
+  flex-direction: column;
+  gap: 15px; /* Space between form elements */
+  padding: 20px;
+  background-color: #f9f9f9;
+  border: 1px solid #e0e0e0;
+  border-radius: 5px;
+  margin-bottom: 20px;
+}
+
+form div { /* Each form group */
+  display: flex;
+  flex-direction: column;
+}
+
+form label {
+  margin-bottom: 5px;
+  font-weight: 500;
+  color: #555;
+}
+
+form input[type="text"],
+form input[type="email"],
+form input[type="password"],
+form input[type="number"],
+form select,
+form textarea {
+  padding: 10px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  font-size: 1em;
+  width: 100%; /* Make inputs take full width of their container */
+}
+
+form input[type="checkbox"] {
+  margin-right: 5px;
+  vertical-align: middle;
+}
+
+
+form textarea {
+  min-height: 80px;
+  resize: vertical;
+}
+
+/* Button Styling */
+button, input[type="submit"] { /* General button styling */
+  padding: 10px 15px;
+  font-size: 1em;
+  color: #fff;
+  background-color: #3498db; /* Primary color */
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+  text-align: center;
+}
+
+button:hover, input[type="submit"]:hover {
+  background-color: #2980b9; /* Darker shade on hover */
+}
+
+button:disabled, input[type="submit"]:disabled {
+  background-color: #bdc3c7; /* Disabled state */
+  cursor: not-allowed;
+}
+
+/* Specific button types (example) */
+button.secondary {
+  background-color: #95a5a6;
+}
+button.secondary:hover {
+  background-color: #7f8c8d;
+}
+button.danger {
+  background-color: #e74c3c;
+}
+button.danger:hover {
+  background-color: #c0392b;
+}
+
+table {
+  width: 100%;
+  margin-bottom: 20px;
+  border-collapse: collapse;
+}
+th, td {
+  padding: 12px;
+  text-align: left;
+  border-bottom: 1px solid #ddd;
+}
+th {
+  background-color: #f2f2f2;
+  font-weight: 600;
+}
+tr:hover {
+  background-color: #f9f9f9;
+}
+
+/* Basic Navbar Styling (applied to nav in App.tsx Layout) */
+/* The inline styles in App.tsx for nav will take precedence if not removed. */
+/* Better to remove inline styles and use CSS classes or styled-components. */
+/* For now, these are general suggestions if inline styles were removed. */
+nav { /* Assuming this targets the nav in Layout */
+  background-color: #2c3e50 !important; /* Primary dark color - important to override inline */
+  padding: 15px 30px !important;
+}
+nav ul {
+  gap: 20px !important;
+}
+nav ul li a {
+  color: #ecf0f1 !important; /* Light text for dark background */
+  font-weight: 500;
+  padding: 5px 0;
+}
+nav ul li a:hover {
+  color: #bdc3c7 !important;
+  text-decoration: none !important;
+}
+nav button { /* For logout button */
+  background-color: #e74c3c !important; /* Example: danger color for logout */
+}
+nav button:hover {
+  background-color: #c0392b !important;
+}
+
+/* Product Card Styling */
+/* Assuming ProductCard.tsx's inline styles are removed or this is more specific */
+/* This requires ProductCard to have a class, e.g. <div className="product-card"> */
+.product-card {
+  border: 1px solid #e0e0e0 !important;
+  margin: 10px !important;
+  padding: 15px !important;
+  width: calc(25% - 20px) !important; /* Example for 4 cards per row, adjust as needed */
+  box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+  border-radius: 6px;
+  background-color: #fff;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between; /* Pushes link/button to bottom */
+}
+.product-card img {
+  width: 100% !important;
+  height: 150px !important; /* Fixed height for consistency */
+  object-fit: cover !important;
+  margin-bottom: 10px;
+  border-radius: 4px;
+}
+.product-card h3 {
+  font-size: 1.2em;
+  margin-bottom: 0.5em;
+}
+.product-card p {
+  font-size: 0.9em;
+  margin-bottom: 0.5em;
+  color: #555;
+}
+.product-card a { /* View Details link */
+  display: inline-block;
+  margin-top: 10px;
+  padding: 8px 12px;
+  background-color: #3498db;
+  color: white !important; /* Override global 'a' if needed */
+  border-radius: 4px;
+  text-align: center;
+}
+.product-card a:hover {
+  background-color: #2980b9;
+  text-decoration: none !important;
+}
+
+/* Notification Icon/Dropdown specific styling can be done with CSS Modules or more specific selectors */
+/* Example for NotificationIcon Bell (if it was a real icon) */
+/* .notification-bell { font-size: 1.5em; color: #fff; } */
+/* .notification-badge { background: red; ... } */
+
+/* General page wrapper for consistent padding etc. */
+/* The div inside Layout in App.tsx can get this class */
+.page-content-wrapper {
+  padding: 20px;
+  background-color: #fff; /* If body is #f4f7f6, content area is white */
+  min-height: calc(100vh - 100px); /* Adjust 100px based on nav/footer height */
+}
+
+/* Responsive adjustments (very basic) */
+@media (max-width: 768px) {
+  .product-card {
+    width: calc(50% - 20px) !important; /* 2 cards per row on medium screens */
+  }
+  nav ul {
+    flex-direction: column; /* Stack nav items on small screens */
+    align-items: flex-start;
+  }
+  nav {
+    padding: 10px 15px !important;
+  }
+}
+
+@media (max-width: 480px) {
+  .product-card {
+    width: calc(100% - 20px) !important; /* 1 card per row on small screens */
+  }
+  h1 { font-size: 1.8em; }
+  h2 { font-size: 1.5em; }
 }
