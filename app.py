@@ -36,6 +36,72 @@ status_bar_frame.pack(pady=(0,5), padx=10, fill=tk.X) # Reduced top padding
 
 
 # --- Functions ---
+
+# --- Thumbnail Generation ---
+def generate_video_thumbnail(video_path, target_size=(120, 90)):
+    """
+    Generates a thumbnail for a video file using OpenCV.
+
+    Args:
+        video_path (str): Path to the video file.
+        target_size (tuple): Desired (max_width, max_height) for the thumbnail.
+
+    Returns:
+        PIL.Image.Image or None: A Pillow Image object of the thumbnail,
+                                 or None if thumbnail generation fails.
+    """
+    cap = None  # Initialize cap outside try to ensure it's available in finally-like block
+    try:
+        cap = cv2.VideoCapture(video_path)
+        if not cap.isOpened():
+            print(f"Error: Could not open video file for thumbnail: {video_path}")
+            return None
+
+        ret, frame = cap.read()
+        if not ret or frame is None:
+            print(f"Error: Could not read first frame for thumbnail: {video_path}")
+            return None
+
+        # Convert frame from BGR (OpenCV default) to RGB (Pillow default)
+        rgb_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+        pil_image = Image.fromarray(rgb_frame)
+
+        # Resize the image to fit within target_size while maintaining aspect ratio
+        original_width, original_height = pil_image.size
+        target_width, target_height = target_size
+
+        if original_width == 0 or original_height == 0:
+            print(f"Error: Invalid frame dimensions for thumbnail: {video_path}")
+            return None
+
+        # Calculate aspect ratios
+        img_aspect_ratio = original_width / original_height
+        target_aspect_ratio = target_width / target_height
+
+        if img_aspect_ratio > target_aspect_ratio:
+            # Image is wider than target, scale by width
+            new_width = target_width
+            new_height = int(new_width / img_aspect_ratio)
+        else:
+            # Image is taller than or same aspect as target, scale by height
+            new_height = target_height
+            new_width = int(new_height * img_aspect_ratio)
+
+        # Ensure new dimensions are at least 1x1
+        new_width = max(1, new_width)
+        new_height = max(1, new_height)
+
+        resized_image = pil_image.resize((new_width, new_height), Image.LANCZOS)
+
+        return resized_image
+
+    except Exception as e:
+        print(f"Error generating video thumbnail for {video_path}: {e}")
+        return None
+    finally:
+        if cap is not None and cap.isOpened():
+            cap.release()
+
 def select_directory():
     """Opens a dialog to select a directory, stores the path, and lists supported files."""
     global selected_directory
@@ -340,69 +406,3 @@ clear_media_display()
 
 # Start the Tkinter event loop
 root.mainloop()
-
-
-# --- Thumbnail Generation ---
-def generate_video_thumbnail(video_path, target_size=(120, 90)):
-    """
-    Generates a thumbnail for a video file using OpenCV.
-
-    Args:
-        video_path (str): Path to the video file.
-        target_size (tuple): Desired (max_width, max_height) for the thumbnail.
-
-    Returns:
-        PIL.Image.Image or None: A Pillow Image object of the thumbnail,
-                                 or None if thumbnail generation fails.
-    """
-    cap = None  # Initialize cap outside try to ensure it's available in finally-like block
-    try:
-        cap = cv2.VideoCapture(video_path)
-        if not cap.isOpened():
-            print(f"Error: Could not open video file for thumbnail: {video_path}")
-            return None
-
-        ret, frame = cap.read()
-        if not ret or frame is None:
-            print(f"Error: Could not read first frame for thumbnail: {video_path}")
-            return None
-
-        # Convert frame from BGR (OpenCV default) to RGB (Pillow default)
-        rgb_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-        pil_image = Image.fromarray(rgb_frame)
-
-        # Resize the image to fit within target_size while maintaining aspect ratio
-        original_width, original_height = pil_image.size
-        target_width, target_height = target_size
-
-        if original_width == 0 or original_height == 0:
-            print(f"Error: Invalid frame dimensions for thumbnail: {video_path}")
-            return None
-
-        # Calculate aspect ratios
-        img_aspect_ratio = original_width / original_height
-        target_aspect_ratio = target_width / target_height
-
-        if img_aspect_ratio > target_aspect_ratio:
-            # Image is wider than target, scale by width
-            new_width = target_width
-            new_height = int(new_width / img_aspect_ratio)
-        else:
-            # Image is taller than or same aspect as target, scale by height
-            new_height = target_height
-            new_width = int(new_height * img_aspect_ratio)
-
-        # Ensure new dimensions are at least 1x1
-        new_width = max(1, new_width)
-        new_height = max(1, new_height)
-
-        resized_image = pil_image.resize((new_width, new_height), Image.LANCZOS)
-
-        return resized_image
-
-    except Exception as e:
-        print(f"Error generating video thumbnail for {video_path}: {e}")
-        return None
-    finally:
-        if cap is not None and cap.isOpened():
-            cap.release()
