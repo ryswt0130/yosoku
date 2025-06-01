@@ -324,31 +324,50 @@ ipcMain.on('open-media', (event, { filePath, fileType }) => { // isFavorite stat
   }
 });
 
+// Utility function to shuffle an array
+function shuffleArray(array) {
+    for (let i = array.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [array[i], array[j]] = [array[j], array[i]];
+    }
+}
+
 // Handle request for recommendations
 ipcMain.on('get-recommendations', (event, { filePath: currentFilePath, fileType: currentFileType }) => {
+  const MAX_RECOMMENDATIONS = 5;
+  const MAX_FROM_SAME_DIR = 2;
+
   if (!allScannedMediaFiles || allScannedMediaFiles.length === 0) {
     event.sender.send('recommendations-loaded', []);
     return;
   }
 
+  let finalRecommendations = [];
   const currentFileDir = path.dirname(currentFilePath);
 
-  let recommendations = allScannedMediaFiles.filter(file => {
-    // Exclude the current file itself
-    if (file.filePath === currentFilePath) return false;
-
-    // Prioritize files in the same directory
-    return path.dirname(file.filePath) === currentFileDir;
+  // Step 1: Get files from the same directory
+  let sameDirFiles = allScannedMediaFiles.filter(file => {
+    return file.filePath !== currentFilePath && path.dirname(file.filePath) === currentFileDir;
   });
+  shuffleArray(sameDirFiles);
+  finalRecommendations = sameDirFiles.slice(0, MAX_FROM_SAME_DIR);
 
-  // If not enough from the same directory, you could add other strategies here.
-  // For now, we'll just limit the same-directory results.
+  // Step 2: Fill remaining slots with files from other locations
+  if (finalRecommendations.length < MAX_RECOMMENDATIONS) {
+    const needed = MAX_RECOMMENDATIONS - finalRecommendations.length;
 
-  const MAX_RECOMMENDATIONS = 5;
-  recommendations = recommendations.slice(0, MAX_RECOMMENDATIONS);
+    // Create a set of filePaths already included or the current one, for quick lookup
+    const excludedFilePaths = new Set(finalRecommendations.map(f => f.filePath));
+    excludedFilePaths.add(currentFilePath);
 
-  console.log(`Sending ${recommendations.length} recommendations for ${currentFilePath}`);
-  event.sender.send('recommendations-loaded', recommendations);
+    let otherFiles = allScannedMediaFiles.filter(file => !excludedFilePaths.has(file.filePath));
+    shuffleArray(otherFiles);
+
+    finalRecommendations.push(...otherFiles.slice(0, needed));
+  }
+
+  console.log(`Sending ${finalRecommendations.length} varied recommendations for ${currentFilePath}`);
+  event.sender.send('recommendations-loaded', finalRecommendations);
 });
 
 // Handle request for the current media list (e.g., on startup or returning to index.html)

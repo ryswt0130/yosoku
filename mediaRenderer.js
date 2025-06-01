@@ -5,10 +5,12 @@ document.addEventListener('DOMContentLoaded', () => {
     const recommendationsGrid = document.getElementById('recommendations-grid');
     const appTitleHeader = document.getElementById('app-title-header');
 
-    let currentFilePath = null;
-    let currentFileType = null;
-    let currentIsFavorite = false;
-    let currentVideoElement = null; // Keep a reference to the video element
+    let currentFilePath = null; // Stores the filePath from query params for current media
+    let currentFileType = null; // Stores the fileType from query params
+    let currentIsFavorite = false; // Stores isFavorite from query params
+    let currentAppName = "My Media Browser"; // Stores appName from query params
+    let currentVideoElement = null;
+    let currentFilePathOnPage = null; // Stores the filePath of the media actually loaded and displayed
 
     function updateFavoriteButtonVisual() {
         if (mediaFavoriteBtn) {
@@ -47,19 +49,29 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    function loadMedia(filePath, fileType, isFavorite) {
-        currentFilePath = filePath;
+    function loadMedia(filePath, fileType, isFavorite, appName, isInitialPageLoad = false) {
+        // Update global vars that hold the current state based on parameters
+        currentFilePath = filePath; // This is the target file to load
         currentFileType = fileType;
-        currentIsFavorite = isFavorite === true || isFavorite === 'true'; // Ensure boolean
-        currentVideoElement = null;
+        currentIsFavorite = isFavorite === true || isFavorite === 'true';
+        currentAppName = appName || "My Media Browser"; // Use provided or default
 
-        updateFavoriteButtonVisual(); // Update based on initial status
+        updateFavoriteButtonVisual();
         clearMediaViewer();
         clearRecommendations();
 
-        // Update URL without navigating, for bookmarking or refresh
-        const newUrl = `media.html?filePath=${encodeURIComponent(filePath)}&fileType=${encodeURIComponent(fileType)}&isFavorite=${currentIsFavorite}`;
-        history.pushState({ path: newUrl }, '', newUrl);
+        const newUrl = `media.html?filePath=${encodeURIComponent(filePath)}&fileType=${encodeURIComponent(fileType)}&isFavorite=${currentIsFavorite}&appName=${encodeURIComponent(currentAppName)}`;
+        const stateObject = { filePath, fileType, isFavorite: currentIsFavorite, appName: currentAppName };
+
+        if (isInitialPageLoad || filePath === currentFilePathOnPage) {
+            // If it's the first load of this specific page instance, or we are "reloading" the same media item
+            // (e.g. due to popstate or an external favorite update), replace the state.
+            history.replaceState(stateObject, '', newUrl);
+        } else {
+            // If loading a new distinct media item (e.g. from recommendations), push a new state.
+            history.pushState(stateObject, '', newUrl);
+        }
+        currentFilePathOnPage = filePath; // Update what's actually displayed
 
         if (!filePath || !fileType) {
             const errorMessage = document.createElement('p');
@@ -143,21 +155,52 @@ document.addEventListener('DOMContentLoaded', () => {
 
             item.addEventListener('click', () => {
                 console.log(`Clicked recommended item: ${file.filePath}`);
-                loadMedia(file.filePath, file.fileType); // Load new media and get its recommendations
+                // When loading from recommendation, it's a new history entry (isInitialPageLoad = false)
+                // Pass currentAppName, and the file's own isFavorite status
+                loadMedia(file.filePath, file.fileType, file.isFavorite, currentAppName, false);
             });
             recommendationsGrid.appendChild(item);
         });
     }
+
+    // Handle browser back/forward navigation
+    window.onpopstate = (event) => {
+        console.log("onpopstate triggered", event.state);
+        if (event.state && event.state.filePath) {
+            // Load media using the state from history, treat as initial load for state replacement
+            loadMedia(
+                event.state.filePath,
+                event.state.fileType,
+                event.state.isFavorite,
+                event.state.appName,
+                true // True because we are navigating TO an existing entry, URL is already changed by browser
+            );
+        } else {
+            // If event.state is null, it might be the initial page load or a state not set by us.
+            // Try to re-parse from URL.
+            const params = new URLSearchParams(window.location.search);
+            const filePathFromUrl = params.get('filePath');
+            const fileTypeFromUrl = params.get('fileType');
+            const isFavoriteFromUrl = params.get('isFavorite') === 'true';
+            const appNameFromUrl = params.get('appName') || "My Media Browser";
+            if (filePathFromUrl && fileTypeFromUrl) {
+                loadMedia(filePathFromUrl, fileTypeFromUrl, isFavoriteFromUrl, appNameFromUrl, true);
+            } else {
+                console.warn("Popstate event with no state and unable to parse valid media from URL.");
+                // Optionally, redirect to index or show error
+            }
+        }
+    };
 
     // Initial Load
     const params = new URLSearchParams(window.location.search);
     const initialFilePath = params.get('filePath');
     const initialFileType = params.get('fileType');
     const initialIsFavorite = params.get('isFavorite') === 'true';
-    const appName = params.get('appName') || "My Media Browser"; // Fallback
+    const initialAppName = params.get('appName') || "My Media Browser";
 
     if (appTitleHeader) {
-        appTitleHeader.textContent = appName;
+        appTitleHeader.textContent = initialAppName; // Use initialAppName here
         appTitleHeader.addEventListener('click', () => {
             window.location.href = 'index.html'; // Navigate home
         });
@@ -167,7 +210,8 @@ document.addEventListener('DOMContentLoaded', () => {
     if (loadingMessage) loadingMessage.remove();
 
     if (initialFilePath && initialFileType) {
-        loadMedia(initialFilePath, initialFileType, initialIsFavorite);
+        // For the very first load of the page, treat as initial page load for history.replaceState
+        loadMedia(initialFilePath, initialFileType, initialIsFavorite, initialAppName, true);
     } else {
         clearMediaViewer();
         if (mediaFavoriteBtn) mediaFavoriteBtn.style.display = 'none'; // Hide fav button if no media

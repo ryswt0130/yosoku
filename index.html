@@ -14,24 +14,29 @@
     <link rel="stylesheet" href="styles.css">
 </head>
 <body>
-    <div id="controls">
-        <div id="app-title-header" class="app-title"></div>
+    <header id="main-header">
+        <div id="app-title-header" class="app-title">My Media Browser</div> <!-- Default text, JS will update -->
         <button id="select-dir-btn">Select Media Directory</button>
-        <button id="toggle-favorites-view">Show Favorites</button>
-        <button id="toggle-history-view">Show History</button>
         <button id="manage-folders-btn">Manage Folders</button>
         <div id="volume-control-container">
             <label for="master-volume">Volume:</label>
             <input type="range" id="master-volume" min="0" max="1" step="0.01" value="0.5">
         </div>
-    </div>
+    </header>
 
-    <div id="status-message">
-        <p>Select a directory to view media.</p>
-    </div>
-
-    <div id="media-grid">
-        <!-- Thumbnails will be loaded here -->
+    <div class="page-container">
+        <aside id="sidebar">
+            <button id="toggle-favorites-view">Show Favorites</button>
+            <button id="toggle-history-view">Show History</button>
+        </aside>
+        <main id="main-grid-area">
+            <div id="status-message">
+                <p>Select a directory to view media.</p>
+            </div>
+            <div id="media-grid">
+                <!-- Thumbnails will be loaded here -->
+            </div>
+        </main>
     </div>
 
     <!-- Manage Folders Modal -->

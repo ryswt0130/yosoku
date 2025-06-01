@@ -4,17 +4,20 @@ body {
     background-color: #f0f0f0;
 }
 
-#controls {
-    padding: 10px;
-    background-color: #333;
+/* Header Styling (formerly #controls) */
+#main-header {
+    padding: 10px 15px; /* Consistent padding */
+    background-color: #2c3e50; /* New header background color */
     color: white;
     display: flex;
-    /* justify-content: center; // Remove to allow title to be on left */
     align-items: center;
-    gap: 15px; /* Adjusted gap */
+    gap: 15px;
+    border-bottom: 2px solid #222f3e; /* Subtle border */
+    height: 60px; /* Fixed header height */
+    box-sizing: border-box;
 }
 
-.app-title {
+.app-title { /* Styles for app title in header */
     font-size: 1.2em;
     font-weight: bold;
     cursor: pointer;
@@ -60,8 +63,55 @@ body {
     opacity: 0.9;
 }
 
+/* Page Container Layout (Sidebar + Main Content) */
+.page-container {
+    display: flex;
+    height: calc(100vh - 60px); /* Full viewport height minus header height */
+}
 
-#media-grid {
+#sidebar {
+    width: 200px; /* Fixed width for sidebar */
+    flex-shrink: 0; /* Prevent sidebar from shrinking */
+    background-color: #34495e; /* Sidebar background color */
+    padding: 15px;
+    overflow-y: auto; /* Allow sidebar to scroll if content overflows */
+    color: #ecf0f1;
+    box-sizing: border-box;
+}
+
+#sidebar button { /* Style for buttons within the sidebar */
+    display: block;
+    width: 100%;
+    padding: 12px 15px;
+    margin-bottom: 10px;
+    text-align: left;
+    font-size: 1em; /* Consistent font size */
+    border: none;
+    border-radius: 4px;
+    color: #ecf0f1;
+    background-color: #4a6fa5; /* Button background in sidebar */
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+}
+
+#sidebar button:hover {
+    background-color: #3c5a88; /* Darker on hover */
+}
+
+/* Main Grid Area (Status Message + Media Grid) */
+#main-grid-area {
+    flex-grow: 1; /* Take remaining horizontal space */
+    padding: 15px;
+    overflow-y: auto; /* Allow only this area to scroll for media items */
+    background-color: #f4f6f8; /* Light background for content area */
+    box-sizing: border-box;
+}
+
+#status-message { /* Existing styles should mostly work, ensure it's within this new flow */
+    color: #333; /* Adjust text color for lighter background */
+}
+
+#media-grid { /* Existing styles should mostly work */
     display: flex;
     flex-wrap: wrap;
     padding: 10px;
@@ -336,6 +386,50 @@ body {
         text-align: center;
     }
 }
+
+
+/* Responsive adjustments for new main page layout */
+@media (max-width: 768px) {
+    #main-header {
+        height: auto; /* Allow header to grow if items wrap */
+        flex-direction: column; /* Stack header items vertically */
+        align-items: flex-start; /* Align items to the start */
+        padding: 10px;
+    }
+    .app-title {
+        margin-bottom: 10px; /* Space below title when stacked */
+        margin-right: 0; /* Reset margin */
+    }
+    #main-header > button, #main-header > div#volume-control-container {
+        width: 100%; /* Make header buttons/controls full width */
+        margin-bottom: 5px; /* Space them out */
+    }
+    #main-header > div#volume-control-container label {
+        margin-right: 10px; /* Ensure label and slider have space */
+    }
+
+
+    .page-container {
+        flex-direction: column; /* Stack sidebar and main content */
+        height: auto; /* Let content define height */
+    }
+
+    #sidebar {
+        width: 100%; /* Sidebar takes full width */
+        height: auto; /* Adjust height to content */
+        overflow-y: visible; /* No independent scroll needed if stacked */
+        border-bottom: 2px solid #2c3e50; /* Separator when stacked */
+    }
+    #sidebar button {
+        text-align: center; /* Center text for full-width buttons */
+    }
+
+    #main-grid-area {
+        height: auto; /* Adjust height to content */
+        /* overflow-y: visible; */ /* Main page scroll will handle it if needed, or keep auto if it's very long */
+    }
+}
+
 
 /* Modal Styles */
 .modal {
