@@ -71,18 +71,8 @@ if (toggleHistoryViewBtn) {
     console.warn("Toggle history button not found.");
 }
 
-
-function populateMediaGrid(filesToDisplay, messagePrefix = "Found") {
-    mediaGrid.innerHTML = ''; // Clear existing grid
-
-    if (!filesToDisplay || filesToDisplay.length === 0) {
-    const newVolume = parseFloat(masterVolumeSlider.value);
-    localStorage.setItem('masterVolume', newVolume.toString());
-    console.log(`Master volume changed to: ${newVolume}`);
-    if (window.electronAPI) {
-        window.electronAPI.send('master-volume-changed', newVolume);
-    }
-});
+// Corrected: The erroneous populateMediaGrid definition (lines 45-55) is removed.
+// The correct definition below (previously starting at line 57) is now the active one.
 
 function populateMediaGrid(filesToDisplay, messagePrefix = "Found") {
     mediaGrid.innerHTML = ''; // Clear existing grid
