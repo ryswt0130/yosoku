@@ -14,3 +14,5 @@ build_resources/
 *.nsis
 # macOS specific
 *.DS_Store
+
+# aaa
