@@ -304,7 +304,15 @@ body {
     display: flex;
     flex-direction: column;
     height: 100%;
-    background-color: transparent; /* Changed to transparent */
+    background-color: transparent;
+}
+
+#player-with-title-area {
+    flex-shrink: 0; /* Takes height of its content: player + title */
+    width: 100%;
+    display: flex; /* Internal flex for viewer and title */
+    flex-direction: column;
+    align-items: center; /* Center viewer and title horizontally if they don't take full width */
 }
 
 #media-controls {
@@ -324,18 +332,41 @@ body {
 
 
 #media-viewer-container {
-    flex-grow: 1;
+    /* flex-grow: 1; Removed, as it's now wrapped by player-with-title-area */
+    /* min-height: 0; Removed */
     display: flex;
     justify-content: center;
     align-items: center;
     padding: 10px;
     box-sizing: border-box;
     overflow: hidden;
-    min-height: 0; /* Allow shrinking in flex column */
+    width: 100%; /* Take full width of player-with-title-area */
+    /* Height will be determined by its content (video/img aspect ratio) or the max-height set on children */
 }
 
-.media-page-title { /* Ensure title doesn't shrink away */
-    flex-shrink: 0;
+/* Styling for the actual media elements for aspect ratio and max height */
+#media-viewer-container > video,
+#media-viewer-container > img,
+#media-viewer-container > iframe {
+    display: block;
+    width: 100%; /* Try to take full width of the viewer container */
+    max-width: 100%; /* Ensure it doesn't overflow its parent if aspect ratio makes it wider */
+    /* Max height to prevent pushing title too far down on tall screens / short videos */
+    /* This max-height should be relative to the viewport minus controls, title, some padding, and header */
+    /* Approx: 100vh - header(60) - controls(40) - title(est. 50) - margins/paddings(30) = 100vh - 180px */
+    max-height: calc(100vh - 200px); /* Adjusted approximation */
+    aspect-ratio: 16 / 9; /* Or other desired aspect ratio like 4/3, 1/1 */
+    object-fit: contain; /* Fit within bounds, maintain aspect, letterbox if needed */
+    background-color: #000; /* Background for letterboxing */
+    margin: 0 auto; /* Center if it doesn't take full width due to aspect ratio */
+}
+
+
+.media-page-title {
+    flex-shrink: 0; /* Ensure title doesn't shrink */
+    width: 100%; /* Take full width to respect text-align:left and padding */
+    box-sizing: border-box; /* Include padding in width calculation */
+    margin-top: 5px; /* Specifically 5px from viewer to title */
 }
 
 
@@ -351,15 +382,34 @@ body {
 
 /* Styles for Maximized HTML View on Media Page */
 .media-page-container.html-view-maximized #media-viewer-main-content {
-    flex-grow: 6; /* Increase weight for main content significantly */
-    flex-shrink: 0; /* Main content should not shrink in this mode */
+    flex-grow: 6;
+    flex-shrink: 0;
 }
 
 .media-page-container.html-view-maximized #media-recommendations-sidebar {
-    flex-grow: 1;   /* Allow sidebar to keep some presence or grow minimally */
-    flex-shrink: 1; /* Allow sidebar to shrink if necessary */
-    max-width: 200px; /* Optionally cap sidebar width in maximized view */
-    /* Or use flex-basis: 150px; flex-grow: 0.5; for a smaller, less growing sidebar */
+    flex-grow: 1;
+    flex-shrink: 1;
+    max-width: 200px;
+}
+
+/* Specific adjustments for HTML view to make player area grow */
+.media-page-container.html-view-maximized #player-with-title-area {
+    flex-grow: 1; /* Allow this wrapper to grow vertically */
+    min-height: 0; /* For proper flex behavior if content is too large */
+    width: 100%; /* Ensure it still takes full width */
+}
+
+.media-page-container.html-view-maximized #media-viewer-container {
+    flex-grow: 1; /* Allow iframe's parent to grow within player-with-title-area */
+    width: 100%;  /* Ensure it takes full width */
+    height: 100%; /* Crucial for iframe to expand */
+    /* padding: 0; Remove padding if iframe should be edge-to-edge in this mode */
+}
+
+/* Ensure iframe itself takes full height in this mode */
+.media-page-container.html-view-maximized #media-viewer-container > iframe {
+    height: 100%;
+    /* max-height: none; Override general max-height if it was too restrictive for HTML view */
 }
 
 

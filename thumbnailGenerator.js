@@ -9,8 +9,67 @@ if (!fs.existsSync(THUMBNAILS_DIR)) {
     fs.mkdirSync(THUMBNAILS_DIR, { recursive: true });
 }
 
+// General Thumbnail Constants
 const THUMBNAIL_WIDTH = 200;
 const THUMBNAIL_HEIGHT = 150;
+
+// Constants for HTML Title Thumbnails
+const HTML_THUMB_FONT_SIZE = 16;
+const HTML_THUMB_LINE_HEIGHT_EM = 1.2;
+const HTML_THUMB_ACTUAL_LINE_HEIGHT = Math.floor(HTML_THUMB_FONT_SIZE * HTML_THUMB_LINE_HEIGHT_EM);
+const HTML_THUMB_TEXT_COLOR = '#ffffff';
+const HTML_THUMB_BACKGROUND_COLOR = '#4a5568'; // A neutral dark gray/blue
+const HTML_THUMB_FONT_FAMILY = 'Arial, Helvetica, sans-serif';
+const HTML_THUMB_PADDING_X = 10;
+const HTML_THUMB_PADDING_Y = 10; // Top padding for first line
+const HTML_THUMB_MAX_TEXT_WIDTH = THUMBNAIL_WIDTH - 2 * HTML_THUMB_PADDING_X;
+
+function escapeHTML(str) {
+    if (typeof str !== 'string') return '';
+    return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#039;');
+}
+
+function wrapTextToTSpans(text, maxWidth, fontSize, fontFamily) {
+    // Simplified approach: Estimate characters per line
+    const AVG_CHAR_WIDTH_FACTOR = 0.55; // Adjusted factor, more conservative for average char width
+    const CHARS_PER_LINE = Math.floor(maxWidth / (fontSize * AVG_CHAR_WIDTH_FACTOR));
+    if (CHARS_PER_LINE <= 0) return [text]; // Cannot wrap meaningfully
+
+    const words = text.split(' ');
+    const lines = [];
+    let currentLine = '';
+
+    for (const word of words) {
+        if (currentLine.length === 0) {
+            currentLine = word;
+        } else if ((currentLine + ' ' + word).length <= CHARS_PER_LINE) {
+            currentLine += ' ' + word;
+        } else {
+            // Word itself is too long for a line, break it if it's the only word
+            if (currentLine.length === 0 && word.length > CHARS_PER_LINE) {
+                 lines.push(word.substring(0, CHARS_PER_LINE));
+                 currentLine = word.substring(CHARS_PER_LINE); // Remainder for next line
+                 while(currentLine.length > CHARS_PER_LINE) {
+                     lines.push(currentLine.substring(0, CHARS_PER_LINE));
+                     currentLine = currentLine.substring(CHARS_PER_LINE);
+                 }
+            } else {
+                lines.push(currentLine);
+                currentLine = word;
+                // Handle case where the new word itself is too long
+                while(currentLine.length > CHARS_PER_LINE) {
+                     lines.push(currentLine.substring(0, CHARS_PER_LINE));
+                     currentLine = currentLine.substring(CHARS_PER_LINE);
+                 }
+            }
+        }
+    }
+    if (currentLine.length > 0) {
+        lines.push(currentLine);
+    }
+    return lines.map(line => line.trim());
+}
+
 
 async function generateThumbnail(filePath, fileType) {
     const fileName = path.basename(filePath);
@@ -97,59 +156,41 @@ async function generateThumbnail(filePath, fileType) {
                     title = title.replace(/-/g, ' ').replace(/_/g, ' ');
 
                     // Attempt to make title more readable if it's camelCase or PascalCase
-                    title = title.replace(/([A-Z])/g, ' $1').replace(/^ /, ''); // Add space before caps, remove leading space
-                    title = title.charAt(0).toUpperCase() + title.slice(1); // Capitalize first letter
+                    let title = path.basename(filePath, path.extname(filePath))
+                                  .replace(/-/g, ' ').replace(/_/g, ' ');
+                    // Basic camelCase/PascalCase to space-separated words, then capitalize
+                    title = title.replace(/([A-Z]+)/g, " $1").replace(/([A-Z][a-z])/g, " $1").replace(/^ /, '');
+                    title = title.split(' ').map(word => word.charAt(0).toUpperCase() + word.substring(1)).join(' ');
 
-                    const displayTitle = title.substring(0, 50); // Limit length for display
+                    const lines = wrapTextToTSpans(title, HTML_THUMB_MAX_TEXT_WIDTH, HTML_THUMB_FONT_SIZE, HTML_THUMB_FONT_FAMILY);
+                    const MAX_VISIBLE_LINES = Math.floor((THUMBNAIL_HEIGHT - 2 * HTML_THUMB_PADDING_Y) / HTML_THUMB_ACTUAL_LINE_HEIGHT);
 
-                    const backgroundColor = '#4A5568'; // Tailwind Slate 600
-                    const textColor = '#E2E8F0';     // Tailwind Slate 200
-                    const fontSize = 24;             // Increased font size
-                    const fontFamily = 'Arial, Helvetica, sans-serif';
-
-                    let line1 = displayTitle;
-                    let line2 = '';
-                    const MAX_CHARS_PER_LINE = 18; // Heuristic based on 200px width and font size
-
-                    if (displayTitle.length > MAX_CHARS_PER_LINE) {
-                        let breakPoint = -1;
-                        // Try to find a space to break near the middle or MAX_CHARS_PER_LINE
-                        for (let i = MAX_CHARS_PER_LINE; i > 5; i--) { // Don't break too early
-                            if (displayTitle[i] === ' ') {
-                                breakPoint = i;
-                                break;
+                    let tspanElements = '';
+                    for (let i = 0; i < Math.min(lines.length, MAX_VISIBLE_LINES); i++) {
+                        let lineText = lines[i];
+                        if (i === MAX_VISIBLE_LINES - 1 && lines.length > MAX_VISIBLE_LINES) {
+                            // Estimate chars per line for ellipsis
+                            const CHARS_PER_LINE = Math.floor(HTML_THUMB_MAX_TEXT_WIDTH / (HTML_THUMB_FONT_SIZE * 0.55));
+                            if (lineText.length > CHARS_PER_LINE - 3) { // Check if ellipsis is needed based on CHARS_PER_LINE
+                                lineText = lineText.substring(0, Math.max(0, CHARS_PER_LINE - 3)).trimEnd() + '...';
+                            } else if (lines.length > MAX_VISIBLE_LINES) { // If it fits but there are more lines
+                                lineText = lineText.trimEnd() + '...';
                             }
                         }
-                        if (breakPoint !== -1) {
-                            line1 = displayTitle.substring(0, breakPoint);
-                            line2 = displayTitle.substring(breakPoint + 1);
-                        } else { // No good space, just split
-                            line1 = displayTitle.substring(0, MAX_CHARS_PER_LINE);
-                            line2 = displayTitle.substring(MAX_CHARS_PER_LINE);
-                        }
+                        // For the first tspan, dy is 0 relative to text element's y. For others, it's line height.
+                        const dy = (i === 0) ? 0 : HTML_THUMB_ACTUAL_LINE_HEIGHT;
+                        tspanElements += `<tspan x="${HTML_THUMB_PADDING_X}" dy="${dy}">${escapeHTML(lineText)}</tspan>`;
                     }
-
-                    // Trim and add ellipsis if lines are still too long (second line specifically)
-                    if (line1.length > MAX_CHARS_PER_LINE + 2) line1 = line1.substring(0, MAX_CHARS_PER_LINE -1) + '...';
-                    if (line2.length > MAX_CHARS_PER_LINE + 2) line2 = line2.substring(0, MAX_CHARS_PER_LINE -1) + '...';
-
 
                     const svgContent = `
                       <svg width="${THUMBNAIL_WIDTH}" height="${THUMBNAIL_HEIGHT}" xmlns="http://www.w3.org/2000/svg">
-                        <rect width="100%" height="100%" fill="${backgroundColor}" />
-                        <text x="50%" y="${line2 ? '40%' : '50%'}" dominant-baseline="middle" text-anchor="middle"
-                              font-family="${fontFamily}" font-size="${fontSize}" fill="${textColor}">
-                          ${line1}
+                        <rect width="100%" height="100%" fill="${HTML_THUMB_BACKGROUND_COLOR}" />
+                        <text x="${HTML_THUMB_PADDING_X}" y="${HTML_THUMB_PADDING_Y + HTML_THUMB_FONT_SIZE * 0.8}"
+                              font-family="${HTML_THUMB_FONT_FAMILY}" font-size="${HTML_THUMB_FONT_SIZE}" fill="${HTML_THUMB_TEXT_COLOR}">
+                          ${tspanElements}
                         </text>
-                        ${line2 ? `
-                        <text x="50%" y="60%" dominant-baseline="middle" text-anchor="middle"
-                              font-family="${fontFamily}" font-size="${fontSize}" fill="${textColor}">
-                          ${line2}
-                        </text>` : ''}
                       </svg>
                     `;
-
-                    // outputPath is already defined at the start of generateThumbnail
                     const svgBuffer = Buffer.from(svgContent);
                     await sharp(svgBuffer).png().toFile(outputPath);
                     console.log(`Generated HTML title thumbnail for ${filePath}`);

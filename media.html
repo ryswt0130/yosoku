@@ -14,11 +14,14 @@
                 <button id="back-to-grid-btn">Back to Grid</button>
                 <button id="media-favorite-btn">☆</button>
             </div>
-            <div id="media-viewer-container">
-                <!-- Media will be loaded here by mediaRenderer.js -->
-                <p id="media-loading-message">Loading media...</p>
+            <div id="player-with-title-area">
+                <div id="media-viewer-container">
+                    <!-- Media will be loaded here by mediaRenderer.js -->
+                    <p id="media-loading-message">Loading media...</p>
+                </div>
+                <h2 id="media-title-display" class="media-page-title"></h2>
             </div>
-            <h2 id="media-title-display" class="media-page-title"></h2>
+            <div class="flex-spacer" style="flex-grow: 1;"></div> <!-- Pushes player-with-title-area up -->
         </div>
         <div id="media-recommendations-sidebar">
             <div id="recommendations-section">
