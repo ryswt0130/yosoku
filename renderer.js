@@ -201,19 +201,37 @@ function populateMediaGrid(filesToDisplay, messagePrefix = "Found") {
                     const imgToUpdate = document.getElementById(response.originalImgId);
                     if (imgToUpdate) {
                         imgToUpdate.classList.remove('thumbnail-loading');
-                        if (response.generatedThumbnailPath) {
+                        // Remove any existing message overlay before adding a new one or setting src
+                        const existingMsg = imgToUpdate.parentElement?.querySelector('.thumbnail-message-overlay');
+                        if (existingMsg) existingMsg.remove();
+
+                        if (response.error === 'video_corrupt_or_unreadable') {
+                            imgToUpdate.classList.add('thumbnail-error');
+                            imgToUpdate.alt = 'Video corrupt or unreadable';
+                            if (imgToUpdate.parentElement) {
+                                const errorMsgElement = document.createElement('div');
+                                errorMsgElement.className = 'thumbnail-message-overlay';
+                                errorMsgElement.textContent = 'Video Corrupt';
+                                imgToUpdate.parentElement.appendChild(errorMsgElement);
+                            }
+                        } else if (response.error || !response.generatedThumbnailPath) {
+                            imgToUpdate.classList.add('thumbnail-error');
+                            imgToUpdate.alt = response.error ? `Error: ${response.error}` : `Thumbnail error: ${response.errorDetails || 'Generation failed'}`;
+                            console.error(`Thumbnail generation failed for ${file.filePath}:`, response.error, response.errorDetails);
+                        } else { // Success
                             imgToUpdate.src = `file://${response.generatedThumbnailPath}`;
                             imgToUpdate.alt = displayFileName;
-                        } else {
-                            imgToUpdate.classList.add('thumbnail-error');
-                            imgToUpdate.alt = `Thumbnail error: ${response.error || 'Generation failed'}`;
-                            console.error(`Thumbnail generation failed for ${file.filePath}:`, response.error);
                         }
                     }
-                } catch (error) { // Catches errors from invoke or within the IIFE logic before await
+                } catch (error) {
                     console.error('Error in on-demand thumbnail IIFE for', file.filePath, error);
                     const imgToUpdateOnError = document.getElementById(uniqueImgId);
                     if (imgToUpdateOnError) {
+                        const parent = imgToUpdateOnError.parentElement;
+                        if (parent) { // Remove previous overlay if any
+                           const existingMsg = parent.querySelector('.thumbnail-message-overlay');
+                           if (existingMsg) existingMsg.remove();
+                        }
                         imgToUpdateOnError.classList.remove('thumbnail-loading');
                         imgToUpdateOnError.classList.add('thumbnail-error');
                         imgToUpdateOnError.alt = "Error triggering thumbnail load";
@@ -222,17 +240,21 @@ function populateMediaGrid(filesToDisplay, messagePrefix = "Found") {
             })();
         }
 
-        img.onerror = function() { // Use function keyword for 'this' if needed, or keep arrow
-            // This handler is for if img.src itself fails to load (e.g. file not found, corrupt image)
-            // Avoid re-triggering if already marked as error or still loading.
+        img.onerror = function() {
             if (!this.classList.contains('thumbnail-error') && !this.classList.contains('thumbnail-loading')) {
-                console.error(`Error loading image src: ${this.src}`);
+                console.error(`Error loading image src: ${this.src}`); // this.src might be empty if it never loaded
                 this.classList.add('thumbnail-error');
                 this.alt = 'Failed to load image';
+                // Remove any potential message overlay if a generic load error occurs after attempting to set src
+                const parent = this.parentElement;
+                if (parent) {
+                    const existingMsg = parent.querySelector('.thumbnail-message-overlay');
+                    if (existingMsg) existingMsg.remove();
+                }
             }
         };
 
-        const filenamePara = document.createElement('p'); // Renamed from 'filename' to avoid conflict
+        const filenamePara = document.createElement('p');
         filenamePara.textContent = displayFileName;
 
         item.appendChild(img);
@@ -454,12 +476,9 @@ function displayRegisteredFolders(foldersArray) {
                 if (response.success) {
                     currentAllMediaItems = response.updatedMedia;
                     await renderMediaGrid(); // Refresh main grid
+                    displayRegisteredFolders(response.updatedFolders); // Re-render the modal's folder list
                     modalStatusMessage.textContent = 'Scan option updated. Media library refreshed.';
-                    // Update folderEntry object in the current foldersArray if needed, or rely on re-fetch
-                    const updatedFolderFromServer = response.updatedFolders.find(f => f.path === path);
-                    if (updatedFolderFromServer) {
-                        folderEntry.recursive = updatedFolderFromServer.recursive; // Update local state
-                    }
+                    // No longer need to manually update folderEntry.recursive as the list is re-rendered
                 } else {
                     throw new Error(response.message || 'Failed to update scan option.');
                 }

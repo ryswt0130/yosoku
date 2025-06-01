@@ -11,6 +11,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const mediaFavoriteBtn = document.getElementById('media-favorite-btn');
     const recommendationsGrid = document.getElementById('recommendations-grid');
     const appTitleHeader = document.getElementById('app-title-header');
+    const mediaPageContainer = document.querySelector('.media-page-container'); // Get main container
 
     let currentFilePath = null;
     let currentFileType = null;
@@ -67,12 +68,21 @@ document.addEventListener('DOMContentLoaded', () => {
         currentFilePath = filePath; // This is the target file to load
         currentFileType = fileType;
         currentIsFavorite = isFavorite === true || isFavorite === 'true';
-        currentAppName = appName || "My Media Browser"; // Use provided or default
+        currentAppName = appName || "My Media Browser";
 
         updateFavoriteButtonVisual();
         clearMediaViewer();
         clearRecommendations();
-        if (mediaTitleDisplay) mediaTitleDisplay.textContent = ''; // Clear previous title
+        if (mediaTitleDisplay) mediaTitleDisplay.textContent = '';
+
+        // Apply/Remove maximized class for HTML view
+        if (mediaPageContainer) {
+            if (fileType === 'html') {
+                mediaPageContainer.classList.add('html-view-maximized');
+            } else {
+                mediaPageContainer.classList.remove('html-view-maximized');
+            }
+        }
 
         const newUrl = `media.html?filePath=${encodeURIComponent(filePath)}&fileType=${encodeURIComponent(fileType)}&isFavorite=${currentIsFavorite}&appName=${encodeURIComponent(currentAppName)}`;
         const stateObject = { filePath, fileType, isFavorite: currentIsFavorite, appName: currentAppName };

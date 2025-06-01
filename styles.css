@@ -1,7 +1,14 @@
+html, body {
+    height: 100%;
+    margin: 0;
+    padding: 0;
+    overflow-x: hidden; /* Prevent horizontal scroll on body/html */
+}
+
 body {
     font-family: sans-serif;
-    margin: 0;
-    background-color: #f0f0f0;
+    /* background-color: #f0f0f0; Applied by JS or default */
+    /* height: 100% is now in html, body above */
 }
 
 /* Header Styling (formerly #controls) */
@@ -143,8 +150,9 @@ body {
     overflow: hidden; /* Ensure content fits */
     cursor: pointer;
     transition: transform 0.2s ease-in-out;
-    display: flex; /* Added for better control over image and text */
-    flex-direction: column; /* Stack image and text vertically */
+    display: flex;
+    flex-direction: column;
+    position: relative; /* For positioning the thumbnail-message-overlay */
 }
 
 .media-item:hover {
@@ -171,6 +179,26 @@ body {
     background-color: #1e1e1e; /* Even darker for error */
     /* A simple SVG error icon as a data URI could be used here */
     /* For now, color indicates error, alt text should provide more info */
+}
+
+.media-item img.thumbnail-error { /* More specific error styling if needed */
+    background-color: #402020; /* Dark red-ish error background */
+}
+
+.thumbnail-message-overlay {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background-color: rgba(0, 0, 0, 0.75);
+    color: white;
+    padding: 6px 10px;
+    border-radius: 4px;
+    font-size: 11px; /* Smaller font for overlay */
+    text-align: center;
+    z-index: 1;
+    pointer-events: none; /* So it doesn't interfere with clicks on the item if any */
+    white-space: nowrap; /* Keep message on one line if possible, or adjust */
 }
 
 .media-item p {
@@ -229,10 +257,10 @@ body {
     justify-content: center;
     align-items: center;
     width: 100%;
-    height: calc(100vh - 60px); /* Adjust based on #media-controls height */
+    height: calc(100vh - 60px); /* This height is for the old structure, now controlled by flex-grow */
     padding: 10px;
     box-sizing: border-box;
-    background-color: #222; /* Dark background for media viewing */
+    background-color: transparent; /* Changed from #222 to transparent */
 }
 
 #media-viewer-container video,
@@ -321,8 +349,22 @@ body {
     color: #f0f0f0;
 }
 
+/* Styles for Maximized HTML View on Media Page */
+.media-page-container.html-view-maximized #media-viewer-main-content {
+    flex-grow: 6; /* Increase weight for main content significantly */
+    flex-shrink: 0; /* Main content should not shrink in this mode */
+}
+
+.media-page-container.html-view-maximized #media-recommendations-sidebar {
+    flex-grow: 1;   /* Allow sidebar to keep some presence or grow minimally */
+    flex-shrink: 1; /* Allow sidebar to shrink if necessary */
+    max-width: 200px; /* Optionally cap sidebar width in maximized view */
+    /* Or use flex-basis: 150px; flex-grow: 0.5; for a smaller, less growing sidebar */
+}
+
+
 /* Styles for Recommendations Section in media.html - now inside sidebar */
-#recommendations-section h2 { /* Keep original h2 styling */
+#recommendations-section h2 {
     margin-top: 0;
     font-size: 1.2em;
     border-bottom: 1px solid #555;
@@ -346,22 +388,25 @@ body {
     cursor: pointer;
     transition: background-color 0.15s ease-in-out; /* Changed transition */
     display: flex; /* Make recommended item a flex container for image + text */
-    flex-direction: row; /* Align image and text horizontally */
-    align-items: center; /* Center items vertically */
-    padding: 5px; /* Add some padding */
+    flex-direction: row;
+    align-items: flex-start; /* Changed from center to flex-start for better text alignment */
+    padding: 5px;
 }
 
 .recommended-item:hover {
-    background-color: #383838; /* Darker hover */
+    background-color: #383838;
 }
 
 .recommended-item img {
-    width: 100px; /* Fixed width for thumbnail in sidebar item */
-    height: 75px;  /* Fixed height for thumbnail */
-    object-fit: cover;
-    display: block;
-    margin-right: 8px; /* Space between image and text */
-    border-radius: 3px;
+    width: 120px; /* Adjusted width */
+    /* height: 75px; */ /* REMOVED fixed height */
+    aspect-ratio: 16 / 9; /* Added 16:9 aspect ratio */
+    object-fit: cover;    /* Ensured */
+    background-color: #000; /* Added fallback background */
+    display: block;       /* Ensured */
+    margin-right: 10px;   /* Adjusted margin */
+    border-radius: 3px;   /* Kept existing */
+    flex-shrink: 0; /* Prevent image from shrinking if text is too long */
 }
 
 .recommended-item p {

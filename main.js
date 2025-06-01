@@ -511,22 +511,34 @@ ipcMain.handle('get-thumbnail-for-file', async (event, { filePath, fileType, img
     try {
         console.log(`On-demand thumbnail request for: ${filePath} (imgId: ${imgIdForRenderer})`);
         // generateThumbnail will check if thumbnail already exists.
-        // If it exists, it returns the path. If not, it generates, saves, and returns the path.
-        const thumbnailPath = await generateThumbnail(filePath, fileType);
+        // generateThumbnail now returns an object: { generatedThumbnailPath, error, details }
+        const thumbResult = await generateThumbnail(filePath, fileType);
 
-        // Update allScannedMediaFiles with the new thumbnail path if generation was successful
-        // This ensures that if the list is requested again, it has the path.
-        if (thumbnailPath) {
+        if (thumbResult.generatedThumbnailPath) {
+            // Update allScannedMediaFiles with the new thumbnail path if generation was successful
             const fileIndex = allScannedMediaFiles.findIndex(file => file.filePath === filePath);
             if (fileIndex !== -1) {
-                allScannedMediaFiles[fileIndex].thumbnailPath = thumbnailPath;
-                // console.log(`Updated thumbnailPath for ${filePath} in allScannedMediaFiles.`);
+                allScannedMediaFiles[fileIndex].thumbnailPath = thumbResult.generatedThumbnailPath;
             }
+            return {
+                originalImgId: imgIdForRenderer,
+                generatedThumbnailPath: thumbResult.generatedThumbnailPath,
+                error: null,
+                errorDetails: null
+            };
+        } else {
+            // An error occurred during thumbnail generation
+            console.error(`Thumbnail generation failed for ${filePath}: ${thumbResult.error}`, thumbResult.details);
+            return {
+                originalImgId: imgIdForRenderer,
+                generatedThumbnailPath: null,
+                error: thumbResult.error, // e.g., 'video_corrupt_or_unreadable'
+                errorDetails: thumbResult.details
+            };
         }
-        return { originalImgId: imgIdForRenderer, generatedThumbnailPath: thumbnailPath, error: null };
-    } catch (error) {
-        console.error(`Error generating thumbnail on-demand for ${filePath}: ${error.message}`);
-        return { originalImgId: imgIdForRenderer, generatedThumbnailPath: null, error: error.message || 'Unknown error during generation' };
+    } catch (error) { // Catch errors if generateThumbnail itself throws (shouldn't with new design) or other issues
+        console.error(`Unexpected error in get-thumbnail-for-file for ${filePath}: ${error.message}`);
+        return { originalImgId: imgIdForRenderer, generatedThumbnailPath: null, error: 'ipc_handler_error', errorDetails: error.message };
     }
 });
 
