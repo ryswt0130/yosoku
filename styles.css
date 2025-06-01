@@ -303,16 +303,18 @@ body {
     flex: 3; /* Takes up 3 parts of the space, e.g., 75% */
     display: flex;
     flex-direction: column;
-    height: 100%;
+    /* height: 100%; Removed, let flexbox manage height based on parent .media-page-container */
     background-color: transparent;
 }
 
 #player-with-title-area {
-    flex-shrink: 0; /* Takes height of its content: player + title */
+    flex-grow: 1; /* This area now takes up the available space */
+    flex-shrink: 1; /* Allow it to shrink */
+    min-height: 0; /* Crucial for allowing content to shrink properly */
     width: 100%;
-    display: flex; /* Internal flex for viewer and title */
+    display: flex;
     flex-direction: column;
-    align-items: center; /* Center viewer and title horizontally if they don't take full width */
+    /* align-items: center; Removed, children are width 100% or use margin:auto */
 }
 
 #media-controls {
@@ -341,32 +343,41 @@ body {
     box-sizing: border-box;
     overflow: hidden;
     width: 100%; /* Take full width of player-with-title-area */
-    /* Height will be determined by its content (video/img aspect ratio) or the max-height set on children */
+    /* Height determined by its content (media element) */
+    flex-grow: 1; /* Takes available space within #player-with-title-area, before title */
+    flex-shrink: 1; /* Allow it to shrink */
+    min-height: 0; /* Allows it to shrink if content is smaller */
 }
 
 /* Styling for the actual media elements for aspect ratio and max height */
 #media-viewer-container > video,
-#media-viewer-container > img,
+#media-viewer-container > img {
+    display: block;
+    width: 100%;
+    max-width: 100%;
+    max-height: 100%; /* Fill the container, constrained by object-fit and aspect-ratio */
+    aspect-ratio: 16 / 9;
+    object-fit: contain;
+    background-color: #000;
+    margin: 0 auto;
+}
+
 #media-viewer-container > iframe {
     display: block;
-    width: 100%; /* Try to take full width of the viewer container */
-    max-width: 100%; /* Ensure it doesn't overflow its parent if aspect ratio makes it wider */
-    /* Max height to prevent pushing title too far down on tall screens / short videos */
-    /* This max-height should be relative to the viewport minus controls, title, some padding, and header */
-    /* Approx: 100vh - header(60) - controls(40) - title(est. 50) - margins/paddings(30) = 100vh - 180px */
-    max-height: calc(100vh - 200px); /* Adjusted approximation */
-    aspect-ratio: 16 / 9; /* Or other desired aspect ratio like 4/3, 1/1 */
-    object-fit: contain; /* Fit within bounds, maintain aspect, letterbox if needed */
-    background-color: #000; /* Background for letterboxing */
-    margin: 0 auto; /* Center if it doesn't take full width due to aspect ratio */
+    width: 100%;
+    height: 100%; /* Iframe should take full height of its container */
+    border: none;
+    background-color: #fff; /* Default background for iframe content area */
 }
 
 
 .media-page-title {
-    flex-shrink: 0; /* Ensure title doesn't shrink */
-    width: 100%; /* Take full width to respect text-align:left and padding */
-    box-sizing: border-box; /* Include padding in width calculation */
-    margin-top: 5px; /* Specifically 5px from viewer to title */
+    flex-shrink: 0;
+    width: 100%;
+    box-sizing: border-box;
+    margin-top: 5px;
+    margin-bottom: 10px; /* Added for spacing at the bottom of player-with-title-area */
+    /* Other text properties like color, font-size, text-align, padding remain */
 }
 
 
