@@ -17,6 +17,17 @@ body {
     box-sizing: border-box;
 }
 
+#background-color-picker {
+    margin-left: 15px;
+    height: 30px;
+    width: 50px;
+    border: 1px solid #555; /* Subtle border */
+    padding: 2px; /* Small padding for the color swatch area */
+    background-color: transparent;
+    cursor: pointer;
+    border-radius: 4px;
+}
+
 .app-title { /* Styles for app title in header */
     font-size: 1.2em;
     font-weight: bold;
@@ -70,11 +81,12 @@ body {
 }
 
 #sidebar {
-    width: 200px; /* Fixed width for sidebar */
-    flex-shrink: 0; /* Prevent sidebar from shrinking */
-    background-color: #34495e; /* Sidebar background color */
+    width: 200px;
+    flex-shrink: 0;
+    /* background-color: #34495e; */ /* REMOVED - Will be set by body or transparent */
+    background-color: transparent; /* Make sidebar transparent */
     padding: 15px;
-    overflow-y: auto; /* Allow sidebar to scroll if content overflows */
+    overflow-y: auto;
     color: #ecf0f1;
     box-sizing: border-box;
 }
@@ -100,18 +112,22 @@ body {
 
 /* Main Grid Area (Status Message + Media Grid) */
 #main-grid-area {
-    flex-grow: 1; /* Take remaining horizontal space */
+    flex-grow: 1;
     padding: 15px;
-    overflow-y: auto; /* Allow only this area to scroll for media items */
-    background-color: #f4f6f8; /* Light background for content area */
+    overflow-y: auto;
+    /* background-color: #f4f6f8; */ /* REMOVED - Will be set by body or transparent */
+    background-color: transparent; /* Make main grid area transparent */
     box-sizing: border-box;
 }
 
-#status-message { /* Existing styles should mostly work, ensure it's within this new flow */
-    color: #333; /* Adjust text color for lighter background */
+#status-message {
+    /* color: #333; */ /* Text color might need to be dynamic or a high contrast default */
+    color: #f0f0f0; /* Default to light text, assuming dark backgrounds are common */
+    /* Or add a very subtle, semi-transparent background to status message itself */
+    /* background-color: rgba(0, 0, 0, 0.1); border-radius: 3px; padding: 5px; */
 }
 
-#media-grid { /* Existing styles should mostly work */
+#media-grid {
     display: flex;
     flex-wrap: wrap;
     padding: 10px;
@@ -232,6 +248,19 @@ body {
 #media-viewer-container p { /* For error or loading messages */
     color: white;
     font-size: 18px;
+}
+
+/* Style for media title on media.html */
+.media-page-title {
+    color: #e0e0e0; /* Light gray, slightly less bright than pure white */
+    font-size: 1.3em;
+    font-weight: normal; /* Normal weight to differentiate from main headings */
+    margin-top: 12px;  /* Space above the title */
+    margin-bottom: 10px; /* Space below the title */
+    text-align: center;
+    padding: 0 15px; /* Horizontal padding */
+    word-break: break-word; /* For long filenames without spaces */
+    line-height: 1.4; /* Improve readability for potentially wrapped titles */
 }
 
 /* Media Page Container Layout */

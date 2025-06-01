@@ -334,8 +334,8 @@ function shuffleArray(array) {
 
 // Handle request for recommendations
 ipcMain.on('get-recommendations', (event, { filePath: currentFilePath, fileType: currentFileType }) => {
-  const MAX_RECOMMENDATIONS = 5;
-  const MAX_FROM_SAME_DIR = 2;
+  const MAX_RECOMMENDATIONS = 20; // Changed from 5 to 20
+  const MAX_FROM_SAME_DIR = 4;  // Changed from 2 to 4
 
   if (!allScannedMediaFiles || allScannedMediaFiles.length === 0) {
     event.sender.send('recommendations-loaded', []);
@@ -498,4 +498,13 @@ ipcMain.handle('get-thumbnail-for-file', async (event, { filePath, fileType, img
         console.error(`Error generating thumbnail on-demand for ${filePath}: ${error.message}`);
         return { originalImgId: imgIdForRenderer, generatedThumbnailPath: null, error: error.message || 'Unknown error during generation' };
     }
+});
+
+ipcMain.on('background-color-changed', (event, newColor) => {
+    // Broadcast to all other windows
+    BrowserWindow.getAllWindows().forEach(win => {
+        if (win.webContents !== event.sender) {
+            win.webContents.send('apply-background-color', newColor);
+        }
+    });
 });

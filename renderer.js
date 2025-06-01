@@ -9,26 +9,73 @@ const manageFoldersModal = document.getElementById('manage-folders-modal');
 const modalCloseBtn = manageFoldersModal.querySelector('.modal-close-btn');
 const registeredFoldersList = document.getElementById('registered-folders-list');
 const modalStatusMessage = document.getElementById('modal-status-message');
+const backgroundColorPicker = document.getElementById('background-color-picker');
 
+const DEFAULT_BACKGROUND_COLOR = '#f0f0f0'; // Match initial CSS body background
+const BACKGROUND_COLOR_STORAGE_KEY = 'appBackgroundColor';
 
 let currentAllMediaItems = []; // Store the full list of media items
 let showingOnlyFavorites = false;
 let showingOnlyHistory = false;
 
 // Initialize and handle master volume
+function applyBackgroundColor(color) {
+    document.body.style.backgroundColor = color;
+}
+
 function initializeVolume() {
+    // ... (existing volume init code)
     const savedVolume = localStorage.getItem('masterVolume');
     let currentVolume = 0.5; // Default volume
     if (savedVolume !== null) {
         currentVolume = parseFloat(savedVolume);
     }
-    masterVolumeSlider.value = currentVolume;
-    // Apply this volume to any relevant audio/video elements if needed on this page (none here)
-    // Send initial volume to main process if other windows might need it (optional)
-    // window.electronAPI.send('master-volume-changed', currentVolume);
+    if (masterVolumeSlider) masterVolumeSlider.value = currentVolume;
 }
 
-masterVolumeSlider.addEventListener('input', () => {
+if (masterVolumeSlider) { // Guard event listener attachment
+    masterVolumeSlider.addEventListener('input', () => {
+        const newVolume = parseFloat(masterVolumeSlider.value);
+        localStorage.setItem('masterVolume', newVolume.toString());
+        console.log(`Master volume changed to: ${newVolume}`);
+        if (window.electronAPI) {
+            window.electronAPI.send('master-volume-changed', newVolume);
+        }
+    });
+} else {
+    console.warn("Master volume slider not found.");
+}
+
+// Guard other top-level listeners similarly for robustness, though already checked
+if (selectDirBtn) {
+    selectDirBtn.addEventListener('click', async () => {
+        // ... (existing code) ...
+    });
+} else {
+    console.warn("Select directory button not found.");
+}
+
+if (toggleFavoritesViewBtn) {
+    toggleFavoritesViewBtn.addEventListener('click', () => {
+        // ... (existing code) ...
+    });
+} else {
+    console.warn("Toggle favorites button not found.");
+}
+
+if (toggleHistoryViewBtn) {
+    toggleHistoryViewBtn.addEventListener('click', async () => {
+        // ... (existing code) ...
+    });
+} else {
+    console.warn("Toggle history button not found.");
+}
+
+
+function populateMediaGrid(filesToDisplay, messagePrefix = "Found") {
+    mediaGrid.innerHTML = ''; // Clear existing grid
+
+    if (!filesToDisplay || filesToDisplay.length === 0) {
     const newVolume = parseFloat(masterVolumeSlider.value);
     localStorage.setItem('masterVolume', newVolume.toString());
     console.log(`Master volume changed to: ${newVolume}`);
@@ -278,8 +325,28 @@ window.electronAPI.on('current-media-list-loaded', (files) => {
 // On DOMContentLoaded, request the current media list
 document.addEventListener('DOMContentLoaded', () => {
     initializeVolume();
-    toggleFavoritesViewBtn.textContent = showingOnlyFavorites ? 'Show All Media' : 'Show Favorites';
-    toggleHistoryViewBtn.textContent = showingOnlyHistory ? 'Show All Media' : 'Show History';
+    if(toggleFavoritesViewBtn) toggleFavoritesViewBtn.textContent = showingOnlyFavorites ? 'Show All Media' : 'Show Favorites';
+    if(toggleHistoryViewBtn) toggleHistoryViewBtn.textContent = showingOnlyHistory ? 'Show All Media' : 'Show History';
+
+    // Initialize Background Color
+    if (backgroundColorPicker) {
+        const savedColor = localStorage.getItem(BACKGROUND_COLOR_STORAGE_KEY);
+        const initialColor = savedColor || DEFAULT_BACKGROUND_COLOR;
+        applyBackgroundColor(initialColor);
+        backgroundColorPicker.value = initialColor;
+
+        backgroundColorPicker.addEventListener('input', (event) => {
+            const newColor = event.target.value;
+            applyBackgroundColor(newColor);
+            localStorage.setItem(BACKGROUND_COLOR_STORAGE_KEY, newColor);
+            if (window.electronAPI) {
+                window.electronAPI.send('background-color-changed', newColor);
+            }
+        });
+    } else {
+        console.warn("Background color picker not found.");
+    }
+
 
     // Get App Name from query params and set header
     const params = new URLSearchParams(window.location.search);

@@ -1,3 +1,10 @@
+const DEFAULT_BACKGROUND_COLOR = '#222'; // Default for media page, might differ from index.html
+const BACKGROUND_COLOR_STORAGE_KEY = 'appBackgroundColor';
+
+function applyMediaPageBackgroundColor(color) { // Renamed to avoid conflict if ever merged
+    document.body.style.backgroundColor = color;
+}
+
 document.addEventListener('DOMContentLoaded', () => {
     const mediaViewerContainer = document.getElementById('media-viewer-container');
     const backToGridBtn = document.getElementById('back-to-grid-btn');
@@ -5,12 +12,18 @@ document.addEventListener('DOMContentLoaded', () => {
     const recommendationsGrid = document.getElementById('recommendations-grid');
     const appTitleHeader = document.getElementById('app-title-header');
 
-    let currentFilePath = null; // Stores the filePath from query params for current media
-    let currentFileType = null; // Stores the fileType from query params
-    let currentIsFavorite = false; // Stores isFavorite from query params
-    let currentAppName = "My Media Browser"; // Stores appName from query params
+    let currentFilePath = null;
+    let currentFileType = null;
+    let currentIsFavorite = false;
+    let currentAppName = "My Media Browser";
     let currentVideoElement = null;
-    let currentFilePathOnPage = null; // Stores the filePath of the media actually loaded and displayed
+    let currentFilePathOnPage = null;
+    const mediaTitleDisplay = document.getElementById('media-title-display');
+
+    // Apply initial background color
+    const savedColor = localStorage.getItem(BACKGROUND_COLOR_STORAGE_KEY);
+    applyMediaPageBackgroundColor(savedColor || DEFAULT_BACKGROUND_COLOR);
+
 
     function updateFavoriteButtonVisual() {
         if (mediaFavoriteBtn) {
@@ -59,6 +72,7 @@ document.addEventListener('DOMContentLoaded', () => {
         updateFavoriteButtonVisual();
         clearMediaViewer();
         clearRecommendations();
+        if (mediaTitleDisplay) mediaTitleDisplay.textContent = ''; // Clear previous title
 
         const newUrl = `media.html?filePath=${encodeURIComponent(filePath)}&fileType=${encodeURIComponent(fileType)}&isFavorite=${currentIsFavorite}&appName=${encodeURIComponent(currentAppName)}`;
         const stateObject = { filePath, fileType, isFavorite: currentIsFavorite, appName: currentAppName };
@@ -122,6 +136,12 @@ document.addEventListener('DOMContentLoaded', () => {
 
             console.log(`Adding to history: ${filePath} (${fileType})`);
             window.electronAPI.send('add-to-history', { filePath, fileType });
+        }
+
+        // Set the new media title
+        if (mediaTitleDisplay) {
+            const displayFileName = filePath.split(/\/|\\/).pop() || 'Unnamed Media';
+            mediaTitleDisplay.textContent = displayFileName;
         }
     }
 
@@ -234,6 +254,12 @@ document.addEventListener('DOMContentLoaded', () => {
             if (currentVideoElement && currentFileType === 'video') {
                 applyVolumeToVideo(currentVideoElement, newVolume);
             }
+        });
+
+        // Listener for background color changes from other windows
+        window.electronAPI.on('apply-background-color', (newColor) => {
+            console.log(`Applying background color from IPC: ${newColor}`);
+            applyMediaPageBackgroundColor(newColor);
         });
     }
 
