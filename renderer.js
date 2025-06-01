@@ -391,3 +391,4 @@ function displayRegisteredFolders(foldersArray) {
         li.appendChild(removeBtn);
         registeredFoldersList.appendChild(li);
     });
+}
