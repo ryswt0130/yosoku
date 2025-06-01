@@ -149,13 +149,10 @@ async function generateThumbnail(filePath, fileType) {
                 });
             });
         } else if (fileType === 'html') {
-            return new Promise(async (resolve) => { // Made async for await sharp
+            return new Promise(async (resolve) => {
                 try {
-                    let title = path.basename(filePath, path.extname(filePath));
-                    // Basic sanitization: replace hyphens/underscores with spaces
-                    title = title.replace(/-/g, ' ').replace(/_/g, ' ');
-
-                    // Attempt to make title more readable if it's camelCase or PascalCase
+                    // The first, simpler title processing block is removed.
+                    // Start directly with the more refined title processing:
                     let title = path.basename(filePath, path.extname(filePath))
                                   .replace(/-/g, ' ').replace(/_/g, ' ');
                     // Basic camelCase/PascalCase to space-separated words, then capitalize
