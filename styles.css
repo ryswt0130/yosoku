@@ -296,13 +296,18 @@ body {
 
 
 #media-viewer-container {
-    flex-grow: 1; /* Takes available vertical space in main content */
-    display: flex; /* Keep its flex properties for centering media */
+    flex-grow: 1;
+    display: flex;
     justify-content: center;
     align-items: center;
-    padding: 10px; /* Keep padding */
-    box-sizing: border-box; /* Keep box-sizing */
-    overflow: hidden; /* Ensure media doesn't overflow its container */
+    padding: 10px;
+    box-sizing: border-box;
+    overflow: hidden;
+    min-height: 0; /* Allow shrinking in flex column */
+}
+
+.media-page-title { /* Ensure title doesn't shrink away */
+    flex-shrink: 0;
 }
 
 
@@ -513,9 +518,30 @@ body {
     justify-content: space-between;
     align-items: center;
     padding: 10px 5px;
-    border-bottom: 1px solid #3e444f; /* Slightly lighter border */
-    word-break: break-all; /* Break long paths */
+    border-bottom: 1px solid #3e444f;
+    /* word-break: break-all; -- Handled by span now */
 }
+
+#registered-folders-list li > span { /* For the folder path text */
+    flex-grow: 1; /* Allow path to take available space */
+    margin: 0 10px; /* Space around path */
+    word-break: break-all; /* Break long paths */
+    text-align: left; /* Ensure path is left-aligned */
+}
+
+.recursive-toggle { /* Container for checkbox and its label text */
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 0.9em;
+    color: #ccc; /* Lighter text for the label */
+    cursor: pointer;
+}
+
+.recursive-toggle input[type="checkbox"] {
+    cursor: pointer;
+}
+
 
 #registered-folders-list li:last-child {
     border-bottom: none;

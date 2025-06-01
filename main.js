@@ -54,20 +54,29 @@ function getScannedFolders() {
         if (fs.existsSync(scannedFoldersPath)) {
             const fileContent = fs.readFileSync(scannedFoldersPath, 'utf8');
             if (fileContent) {
-                return JSON.parse(fileContent);
+                let folders = JSON.parse(fileContent);
+                // Migration logic for old string array format
+                if (folders.length > 0 && typeof folders[0] === 'string') {
+                    console.log('Migrating scannedFolders.json from string array to object array format.');
+                    folders = folders.map(folderPath => ({ path: folderPath, recursive: true }));
+                    // Note: This migrated version is not saved back immediately by getScannedFolders.
+                    // It will be saved if a subsequent add/remove/toggle operation calls saveScannedFolders.
+                }
+                return folders; // Array of { path: string, recursive: boolean }
             }
         }
     } catch (error) {
         console.error('Error reading or parsing scannedFolders.json:', error);
     }
-    return [];
+    return []; // Default to empty array
 }
 
-function saveScannedFolders(foldersArray) {
+function saveScannedFolders(foldersArray) { // Expects Array<{ path: string, recursive: boolean }>
     ensureScannedFoldersFileInitialized();
     try {
         const jsonData = JSON.stringify(foldersArray, null, 2);
         fs.writeFileSync(scannedFoldersPath, jsonData, 'utf8');
+        console.log('Scanned folders saved:', foldersArray);
     } catch (error) {
         console.error('Error writing scannedFolders.json:', error);
     }
@@ -248,14 +257,14 @@ async function loadAllMediaFromRegisteredFolders() {
         return [];
     }
 
-    console.log('Loading media from registered folders:', foldersToScan);
+    console.log('Loading media from registered folders:', foldersToScan.map(f => `Path: ${f.path}, Recursive: ${f.recursive}`));
     let consolidatedMediaFiles = [];
     const uniqueFilePaths = new Set();
 
-    for (const folderPath of foldersToScan) {
-        console.log(`Scanning directory: ${folderPath}`);
-        const filesInFolder = scanDirectory(folderPath); // This is synchronous
-        console.log(`Found ${filesInFolder.length} media files in ${folderPath}.`);
+    for (const folderEntry of foldersToScan) { // folderEntry is now { path: string, recursive: boolean }
+        console.log(`Scanning directory: ${folderEntry.path} (Recursive: ${folderEntry.recursive})`);
+        const filesInFolder = scanDirectory(folderEntry.path, folderEntry.recursive); // Pass recursive flag
+        console.log(`Found ${filesInFolder.length} media files in ${folderEntry.path}.`);
 
         for (const file of filesInFolder) {
             if (!uniqueFilePaths.has(file.filePath)) {
@@ -294,12 +303,13 @@ async function loadAllMediaFromRegisteredFolders() {
 
 // Handle scan directory request (now "add and rescan all")
 ipcMain.on('scan-directory', async (event, directoryPath) => {
-  if (directoryPath) { // A new directory was selected to be added
-    const currentFolders = getScannedFolders();
-    if (!currentFolders.includes(directoryPath)) {
-        currentFolders.push(directoryPath);
+  if (directoryPath) {
+    const currentFolders = getScannedFolders(); // Array of { path: string, recursive: boolean }
+    // Check if path already exists
+    if (!currentFolders.some(folder => folder.path === directoryPath)) {
+        currentFolders.push({ path: directoryPath, recursive: true }); // Default new folders to recursive
         saveScannedFolders(currentFolders);
-        console.log(`Added new scan directory: ${directoryPath}. Current folders:`, currentFolders);
+        console.log(`Added new scan directory: ${directoryPath} (recursive by default).`);
     } else {
         console.log(`Directory already in scan list: ${directoryPath}`);
     }
@@ -392,21 +402,16 @@ ipcMain.on('get-current-media-list', async (event) => {
 // IPC handler for removing a scanned folder
 ipcMain.handle('remove-scanned-folder', async (event, folderPathToRemove) => {
     console.log(`Request to remove scanned folder: ${folderPathToRemove}`);
-    let currentFolders = getScannedFolders();
+    let currentFolders = getScannedFolders(); // Array of { path: string, recursive: boolean }
     const initialLength = currentFolders.length;
-    currentFolders = currentFolders.filter(folder => folder !== folderPathToRemove);
+    // Filter based on the path property of the folder objects
+    currentFolders = currentFolders.filter(folder => folder.path !== folderPathToRemove);
 
     if (currentFolders.length < initialLength) {
         saveScannedFolders(currentFolders);
-        console.log(`Removed ${folderPathToRemove}. Updated folders:`, currentFolders);
-        // After removing, reload all media from the remaining registered folders
-        // This will also update allScannedMediaFiles and send 'media-files-loaded'
+        console.log(`Removed ${folderPathToRemove}. Updated folders:`, currentFolders.map(f=>f.path));
         const loadedFiles = await loadAllMediaFromRegisteredFolders();
-        // Send an event to indicate success or the new list.
-        // The renderer might expect 'media-files-loaded' or a direct response.
-        // For now, the main purpose is to update the backend list and trigger a rescan.
-        // The UI part (next subtask) will handle refreshing the view.
-        return { success: true, newFolderList: currentFolders, newMediaList: loadedFiles };
+        return { success: true, updatedFolders: getScannedFolders(), newMediaList: loadedFiles }; // Return current state of folders
     }
     return { success: false, message: "Folder not found in list." };
 });
@@ -470,6 +475,31 @@ ipcMain.on('master-volume-changed', (event, newVolume) => {
     // }
     win.webContents.send('apply-master-volume', newVolume);
   });
+});
+
+// IPC handler for toggling recursive scan option for a folder
+ipcMain.handle('toggle-recursive-scan', async (event, { folderPath, recursive }) => {
+    try {
+        let folders = getScannedFolders(); // Array of {path, recursive}
+        const folderIndex = folders.findIndex(f => f.path === folderPath);
+
+        if (folderIndex === -1) {
+            console.error(`Folder not found for toggling recursive scan: ${folderPath}`);
+            return { success: false, message: 'Folder not found.' };
+        }
+
+        folders[folderIndex].recursive = !!recursive; // Ensure boolean
+        saveScannedFolders(folders);
+        console.log(`Recursive scan for ${folderPath} set to ${folders[folderIndex].recursive}.`);
+
+        // After changing the option, reload all media as the content might change
+        const updatedMedia = await loadAllMediaFromRegisteredFolders(); // This updates allScannedMediaFiles
+
+        return { success: true, updatedMedia: updatedMedia, updatedFolders: getScannedFolders() };
+    } catch (error) {
+        console.error('Error toggling recursive scan:', error);
+        return { success: false, message: error.message || 'Failed to update scan option.' };
+    }
 });
 
 // IPC handler for on-demand thumbnail generation

@@ -5,25 +5,27 @@ const VIDEO_EXTENSIONS = ['.mp4', '.mov', '.avi', '.mkv', '.webm'];
 const IMAGE_EXTENSIONS = ['.jpg', '.jpeg', '.png', '.gif', '.bmp', '.webp'];
 const HTML_EXTENSIONS = ['.html', '.htm'];
 
-function scanDirectory(directoryPath) {
+function scanDirectory(directoryPath, recursive = true) { // Added recursive parameter
     const mediaFiles = [];
 
     if (!fs.existsSync(directoryPath) || !fs.lstatSync(directoryPath).isDirectory()) {
         console.error(`Error: Directory not found or is not a directory: ${directoryPath}`);
-        return []; // Return empty array or throw error as preferred
+        return [];
     }
 
     try {
-        const files = fs.readdirSync(directoryPath);
+        // Use withFileTypes to easily distinguish files from directories without extra lstat calls
+        const entries = fs.readdirSync(directoryPath, { withFileTypes: true });
 
-        for (const file of files) {
-            const filePath = path.join(directoryPath, file);
-            const stat = fs.lstatSync(filePath);
+        for (const entry of entries) {
+            const filePath = path.join(directoryPath, entry.name);
 
-            if (stat.isDirectory()) {
-                mediaFiles.push(...scanDirectory(filePath)); // Recursively scan subdirectories
-            } else if (stat.isFile()) {
-                const ext = path.extname(file).toLowerCase();
+            if (entry.isDirectory()) {
+                if (recursive) { // Only recurse if the flag is true
+                    mediaFiles.push(...scanDirectory(filePath, true)); // Or scanDirectory(filePath, recursive)
+                }
+            } else if (entry.isFile()) {
+                const ext = path.extname(entry.name).toLowerCase();
                 let fileType = null;
 
                 if (VIDEO_EXTENSIONS.includes(ext)) {

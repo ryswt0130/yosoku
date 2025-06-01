@@ -425,50 +425,106 @@ function displayRegisteredFolders(foldersArray) {
         return;
     }
 
-    foldersArray.forEach(folderPath => {
+    foldersArray.forEach(folderEntry => { // folderEntry is now { path: string, recursive: boolean }
         const li = document.createElement('li');
 
         const pathSpan = document.createElement('span');
-        pathSpan.textContent = folderPath;
-        li.appendChild(pathSpan);
+        pathSpan.textContent = folderEntry.path;
+        // li.appendChild(pathSpan); // Path will be part of a container for better layout with checkbox
+
+        const recursiveToggleLabel = document.createElement('label');
+        recursiveToggleLabel.classList.add('recursive-toggle');
+
+        const checkbox = document.createElement('input');
+        checkbox.type = 'checkbox';
+        checkbox.classList.add('recursive-scan-checkbox');
+        checkbox.checked = folderEntry.recursive;
+        checkbox.setAttribute('data-folderpath', folderEntry.path);
+
+        checkbox.addEventListener('change', async (event) => {
+            const path = event.target.dataset.folderpath;
+            const isRecursive = event.target.checked;
+
+            event.target.disabled = true;
+            checkbox.parentElement.style.opacity = 0.5; // Visual feedback
+            modalStatusMessage.textContent = `Updating scan option for ${path}...`;
+
+            try {
+                const response = await window.electronAPI.invoke('toggle-recursive-scan', { folderPath: path, recursive: isRecursive });
+                if (response.success) {
+                    currentAllMediaItems = response.updatedMedia;
+                    await renderMediaGrid(); // Refresh main grid
+                    modalStatusMessage.textContent = 'Scan option updated. Media library refreshed.';
+                    // Update folderEntry object in the current foldersArray if needed, or rely on re-fetch
+                    const updatedFolderFromServer = response.updatedFolders.find(f => f.path === path);
+                    if (updatedFolderFromServer) {
+                        folderEntry.recursive = updatedFolderFromServer.recursive; // Update local state
+                    }
+                } else {
+                    throw new Error(response.message || 'Failed to update scan option.');
+                }
+            } catch (err) {
+                modalStatusMessage.textContent = `Error: ${err.message}`;
+                console.error(err);
+                event.target.checked = !isRecursive; // Revert checkbox on error
+            } finally {
+                event.target.disabled = false;
+                checkbox.parentElement.style.opacity = 1;
+                setTimeout(() => {
+                    if (modalStatusMessage.textContent.startsWith('Scan option updated') || modalStatusMessage.textContent.startsWith('Error:')) {
+                        modalStatusMessage.textContent = '';
+                    }
+                }, 3000);
+            }
+        });
+
+        recursiveToggleLabel.appendChild(checkbox);
+        recursiveToggleLabel.appendChild(document.createTextNode(' Scan Subfolders'));
+
+        // Layout: Checkbox | Path | Remove Button
+        li.appendChild(recursiveToggleLabel);
+        li.appendChild(pathSpan); // pathSpan defined above
 
         const removeBtn = document.createElement('button');
         removeBtn.classList.add('remove-folder-btn');
         removeBtn.textContent = 'Remove';
-        removeBtn.setAttribute('data-folderpath', folderPath);
+        removeBtn.setAttribute('data-folderpath', folderEntry.path);
 
         removeBtn.addEventListener('click', async (e) => {
             const pathToRemove = e.target.getAttribute('data-folderpath');
             if (!pathToRemove) return;
 
+            // Disable both buttons for this item
             removeBtn.disabled = true;
-            removeBtn.textContent = 'Removing...';
+            checkbox.disabled = true;
+            li.style.opacity = 0.5;
             modalStatusMessage.textContent = `Attempting to remove folder: ${pathToRemove}...`;
 
             try {
                 const response = await window.electronAPI.invoke('remove-scanned-folder', pathToRemove);
                 if (response.success) {
                     modalStatusMessage.textContent = `Folder "${pathToRemove}" removed. Library updating...`;
-                    displayRegisteredFolders(response.updatedFolders); // Update the modal list
-
-                    currentAllMediaItems = response.updatedMedia; // Update the master list
-                    await renderMediaGrid(); // Refresh the main grid view, applying current filters
-
-                    // Clear message after a delay
+                    displayRegisteredFolders(response.updatedFolders); // Re-render the modal list
+                    currentAllMediaItems = response.updatedMedia;
+                    await renderMediaGrid();
                     setTimeout(() => {
-                        if (modalStatusMessage.textContent === `Folder "${pathToRemove}" removed. Library updating...`) {
+                        if (modalStatusMessage.textContent.startsWith(`Folder "${pathToRemove}" removed`)) {
                             modalStatusMessage.textContent = '';
                         }
                     }, 3000);
                 } else {
                     modalStatusMessage.textContent = `Error removing folder: ${response.message || 'Unknown error'}`;
                     removeBtn.disabled = false;
+                    checkbox.disabled = false;
+                    li.style.opacity = 1;
                     removeBtn.textContent = 'Remove';
                 }
             } catch (error) {
                 console.error('Error invoking remove-scanned-folder:', error);
                 modalStatusMessage.textContent = `Error: ${error.message || 'Failed to communicate with main process.'}`;
                 removeBtn.disabled = false;
+                checkbox.disabled = false;
+                li.style.opacity = 1;
                 removeBtn.textContent = 'Remove';
             }
         });
