@@ -334,8 +334,8 @@ function shuffleArray(array) {
 
 // Handle request for recommendations
 ipcMain.on('get-recommendations', (event, { filePath: currentFilePath, fileType: currentFileType }) => {
-  const MAX_RECOMMENDATIONS = 20; // Changed from 5 to 20
-  const MAX_FROM_SAME_DIR = 4;  // Changed from 2 to 4
+  const MAX_RECOMMENDATIONS = 50; // Changed from 20 to 50
+  const MAX_FROM_SAME_DIR = 7;  // Changed from 4 to 7
 
   if (!allScannedMediaFiles || allScannedMediaFiles.length === 0) {
     event.sender.send('recommendations-loaded', []);

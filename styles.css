@@ -83,8 +83,7 @@ body {
 #sidebar {
     width: 200px;
     flex-shrink: 0;
-    /* background-color: #34495e; */ /* REMOVED - Will be set by body or transparent */
-    background-color: transparent; /* Make sidebar transparent */
+    background-color: #252526; /* New distinct background color */
     padding: 15px;
     overflow-y: auto;
     color: #ecf0f1;
@@ -254,13 +253,14 @@ body {
 .media-page-title {
     color: #e0e0e0; /* Light gray, slightly less bright than pure white */
     font-size: 1.3em;
-    font-weight: normal; /* Normal weight to differentiate from main headings */
-    margin-top: 12px;  /* Space above the title */
-    margin-bottom: 10px; /* Space below the title */
-    text-align: center;
-    padding: 0 15px; /* Horizontal padding */
-    word-break: break-word; /* For long filenames without spaces */
-    line-height: 1.4; /* Improve readability for potentially wrapped titles */
+    font-weight: normal;
+    margin-top: 12px;
+    margin-bottom: 10px;
+    text-align: left; /* Changed from center to left */
+    padding-left: 10px; /* Add some padding to align with media player if it also has padding */
+    padding-right: 10px; /* Keep right padding consistent */
+    word-break: break-word;
+    line-height: 1.4;
 }
 
 /* Media Page Container Layout */
@@ -276,7 +276,7 @@ body {
     display: flex;
     flex-direction: column;
     height: 100%;
-    background-color: #222; /* Dark background for media viewing */
+    background-color: transparent; /* Changed to transparent */
 }
 
 #media-controls {
@@ -307,10 +307,10 @@ body {
 
 
 #media-recommendations-sidebar {
-    flex: 1; /* Takes up 1 part of the space, e.g., 25% */
-    background-color: #303030; /* Slightly different background for sidebar */
+    flex: 1;
+    background-color: #252526; /* Fixed distinct color, same as index.html sidebar */
     padding: 10px;
-    overflow-y: auto; /* Allow vertical scrolling for recommendations */
+    overflow-y: auto;
     height: 100vh; /* Full height for the sidebar */
     box-sizing: border-box;
     color: #f0f0f0;

@@ -49,7 +49,35 @@ if (masterVolumeSlider) { // Guard event listener attachment
 // Guard other top-level listeners similarly for robustness, though already checked
 if (selectDirBtn) {
     selectDirBtn.addEventListener('click', async () => {
-        // ... (existing code) ...
+        // mediaGrid.innerHTML = ''; // Clearing grid here might be too early if user cancels.
+        // statusMessage.textContent = 'Scanning directory...'; // Also potentially premature.
+
+        // The following lines for clearing grid and setting status are moved to after path is confirmed.
+        // This was the previous logic:
+        // mediaGrid.innerHTML = '';
+        // statusMessage.textContent = 'Scanning directory...';
+        try {
+            const directoryPath = await window.electronAPI.invoke('dialog:openDirectory');
+            if (directoryPath) {
+                // User selected a directory
+                mediaGrid.innerHTML = ''; // Clear grid now that we are proceeding
+                statusMessage.textContent = `Adding '${directoryPath}' and refreshing media from all registered folders... Please wait. This might take a while.`;
+                console.log(`Selected directory: ${directoryPath}, sending to main process.`);
+                window.electronAPI.send('scan-directory', directoryPath);
+            } else {
+                // User cancelled the dialog or no path was returned
+                // Only update status if no media is currently shown, or revert to previous.
+                if (currentAllMediaItems.length === 0) { // Check if grid was already empty
+                    statusMessage.textContent = 'No directory selected or operation cancelled.';
+                } else {
+                     // Optional: Or let existing content and status message persist.
+                    console.log('Directory selection cancelled, existing media list retained.');
+                }
+            }
+        } catch (error) {
+            console.error('Error selecting directory:', error);
+            statusMessage.textContent = `Error selecting directory: ${error.message}`;
+        }
     });
 } else {
     console.warn("Select directory button not found.");
