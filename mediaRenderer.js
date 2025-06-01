@@ -73,7 +73,14 @@ document.addEventListener('DOMContentLoaded', () => {
         updateFavoriteButtonVisual();
         clearMediaViewer();
         clearRecommendations();
-        if (mediaTitleDisplay) mediaTitleDisplay.textContent = '';
+
+        // Clear title robustly at the start of loading new media
+        if (mediaTitleDisplay) {
+            mediaTitleDisplay.textContent = '';
+        } else {
+            // This case should ideally not happen if script order and DOM are correct.
+            console.error("#media-title-display element not found at start of loadMedia.");
+        }
 
         // Apply/Remove maximized class for HTML view
         if (mediaPageContainer) {
@@ -150,8 +157,14 @@ document.addEventListener('DOMContentLoaded', () => {
 
         // Set the new media title
         if (mediaTitleDisplay) {
-            const displayFileName = filePath.split(/\/|\\/).pop() || 'Unnamed Media';
+            const displayFileName = filePath && typeof filePath === 'string' ? (filePath.split(/\/|\\/).pop() || 'Unnamed Media') : 'Invalid File Path';
+            console.log(`Setting media title to: "${displayFileName}" for filePath: "${filePath}"`);
             mediaTitleDisplay.textContent = displayFileName;
+            if (!displayFileName || displayFileName === 'Invalid File Path') {
+                console.warn(`displayFileName for title was problematic. filePath: "${filePath}"`);
+            }
+        } else {
+            console.error("#media-title-display element not found when trying to set title.");
         }
     }
 
@@ -240,11 +253,11 @@ document.addEventListener('DOMContentLoaded', () => {
     if (loadingMessage) loadingMessage.remove();
 
     if (initialFilePath && initialFileType) {
-        // For the very first load of the page, treat as initial page load for history.replaceState
         loadMedia(initialFilePath, initialFileType, initialIsFavorite, initialAppName, true);
     } else {
         clearMediaViewer();
-        if (mediaFavoriteBtn) mediaFavoriteBtn.style.display = 'none'; // Hide fav button if no media
+        if (mediaFavoriteBtn) mediaFavoriteBtn.style.display = 'none';
+        if (mediaTitleDisplay) mediaTitleDisplay.textContent = ' - No Media Loaded - '; // Placeholder for title
         const errorMessage = document.createElement('p');
         errorMessage.textContent = 'Media file path or type not provided in URL.';
         mediaViewerContainer.appendChild(errorMessage);
