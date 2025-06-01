@@ -62,14 +62,21 @@ function populateMediaGrid(filesToDisplay, messagePrefix = "Found") {
     statusMessage.textContent = currentViewMessage;
 
 
-    filesToDisplay.forEach(file => {
-        const item = document.createElement('div');
-        item.classList.add('media-item');
-        item.setAttribute('data-filepath', file.filePath);
-        item.setAttribute('data-filetype', file.fileType);
-        // item.style.position = 'relative'; // Needed if favorite button is absolutely positioned within item
+    filesToDisplay.forEach((file, index) => { // Added index for unique ID generation if needed later
+        try { // Start of try block for each file item
+            if (!file || typeof file.filePath !== 'string') {
+                console.error('Skipping invalid file object during grid population:', file);
+                return; // Skip this iteration
+            }
 
-        const favButton = document.createElement('button');
+            const displayFileName = file.filePath.split(/\/|\\/).pop() || 'Unnamed File';
+
+            const item = document.createElement('div');
+            item.classList.add('media-item');
+            item.setAttribute('data-filepath', file.filePath);
+            item.setAttribute('data-filetype', file.fileType);
+
+            const favButton = document.createElement('button');
         favButton.classList.add('favorite-btn');
         favButton.innerHTML = file.isFavorite ? '★' : '☆'; // Filled star if favorite, outline if not
         favButton.setAttribute('aria-label', file.isFavorite ? 'Unmark as favorite' : 'Mark as favorite');
@@ -109,74 +116,77 @@ function populateMediaGrid(filesToDisplay, messagePrefix = "Found") {
 
         if (file.thumbnailPath) {
             img.src = `file://${file.thumbnailPath}`; // Assuming thumbnailPath is already a full, valid path
-            img.alt = file.filePath.split(/\/|\\/).pop();
+            img.alt = displayFileName;
         } else {
             img.classList.add('thumbnail-loading');
             img.alt = "Loading thumbnail...";
-            // console.log(`No thumbnail for ${file.filePath}, requesting on-demand. ID: ${uniqueImgId}`);
 
             (async () => {
                 try {
                     if (!window.electronAPI) {
-                        console.error("electronAPI not found for on-demand thumbnail.");
+                        console.error("electronAPI not found for on-demand thumbnail for file:", file.filePath);
                         throw new Error("electronAPI not available");
                     }
-                    // Request thumbnail generation
                     const response = await window.electronAPI.invoke('get-thumbnail-for-file', {
                         filePath: file.filePath,
                         fileType: file.fileType,
-                        imgIdForRenderer: uniqueImgId // Send the ID to main process
+                        imgIdForRenderer: uniqueImgId
                     });
 
-                    // The element might have been removed if grid re-rendered quickly
                     const imgToUpdate = document.getElementById(response.originalImgId);
-
                     if (imgToUpdate) {
                         imgToUpdate.classList.remove('thumbnail-loading');
                         if (response.generatedThumbnailPath) {
                             imgToUpdate.src = `file://${response.generatedThumbnailPath}`;
-                            imgToUpdate.alt = file.filePath.split(/\/|\\/).pop();
+                            imgToUpdate.alt = displayFileName;
                         } else {
                             imgToUpdate.classList.add('thumbnail-error');
                             imgToUpdate.alt = `Thumbnail error: ${response.error || 'Generation failed'}`;
                             console.error(`Thumbnail generation failed for ${file.filePath}:`, response.error);
                         }
-                    } else {
-                        // console.log(`Image element ${response.originalImgId} not found for update, likely re-rendered.`);
                     }
-                } catch (error) {
-                    console.error('Error requesting/processing on-demand thumbnail for', file.filePath, error);
-                    const imgToUpdateStill = document.getElementById(uniqueImgId); // Try to find it by originally assigned ID
-                    if (imgToUpdateStill) {
-                        imgToUpdateStill.classList.remove('thumbnail-loading');
-                        imgToUpdateStill.classList.add('thumbnail-error');
-                        imgToUpdateStill.alt = "Error loading thumbnail";
+                } catch (error) { // Catches errors from invoke or within the IIFE logic before await
+                    console.error('Error in on-demand thumbnail IIFE for', file.filePath, error);
+                    const imgToUpdateOnError = document.getElementById(uniqueImgId);
+                    if (imgToUpdateOnError) {
+                        imgToUpdateOnError.classList.remove('thumbnail-loading');
+                        imgToUpdateOnError.classList.add('thumbnail-error');
+                        imgToUpdateOnError.alt = "Error triggering thumbnail load";
                     }
                 }
             })();
         }
 
-        // Common onerror for successfully loaded src or if it fails after setting
-        img.onerror = () => {
-            if (!img.classList.contains('thumbnail-error') && !img.classList.contains('thumbnail-loading')) {
-                 // Only log if it's not an error/loading state already handled
-                console.error(`Error loading image src: ${img.src}`);
-                img.classList.add('thumbnail-error'); // Add error class if src fails to load
-                img.alt = 'Failed to load image';
+        img.onerror = function() { // Use function keyword for 'this' if needed, or keep arrow
+            // This handler is for if img.src itself fails to load (e.g. file not found, corrupt image)
+            // Avoid re-triggering if already marked as error or still loading.
+            if (!this.classList.contains('thumbnail-error') && !this.classList.contains('thumbnail-loading')) {
+                console.error(`Error loading image src: ${this.src}`);
+                this.classList.add('thumbnail-error');
+                this.alt = 'Failed to load image';
             }
         };
 
-        const filename = document.createElement('p');
-        filename.textContent = file.filePath.split(/\/|\\/).pop();
+        const filenamePara = document.createElement('p'); // Renamed from 'filename' to avoid conflict
+        filenamePara.textContent = displayFileName;
 
         item.appendChild(img);
-        item.appendChild(filename);
+        item.appendChild(filenamePara); // Use renamed variable
 
         item.addEventListener('click', () => {
-            console.log(`Requesting to open media: ${file.fileType} - ${file.filePath}`);
-            window.electronAPI.send('open-media', { filePath: file.filePath, fileType: file.fileType });
+            if (file && file.filePath && file.fileType) { // Guard access to file properties
+                console.log(`Requesting to open media: ${file.fileType} - ${file.filePath}`);
+                window.electronAPI.send('open-media', { filePath: file.filePath, fileType: file.fileType });
+            } else {
+                console.error('Cannot open media: file data is incomplete.', file);
+            }
         });
         mediaGrid.appendChild(item);
+
+        } catch (error) { // End of try block for each file item
+            console.error('Error processing media item for grid display:', file, error);
+            // Optionally, append an error placeholder item to the grid or just skip.
+        }
     });
 }
 
